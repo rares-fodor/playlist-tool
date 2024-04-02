@@ -1,38 +1,28 @@
-# create-svelte
+# playlist-tool
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
+Allows users to manipulate their Spotify playlists from a web interface.
 
-## Creating a project
+### Usage
+Register a Spotify API application at: https://developer.spotify.com/dashboard/create.
 
-If you're seeing this, you've probably already done this step. Congrats!
-
+Clone this repository and navigate to the project directory:
 ```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
+git clone --depth 1 https://github.com/rares-fodor/playlist-tool.git && cd playlist-tool
 ```
 
-## Developing
+Create an `.env` file and set your `CLIENT_ID` and `REDIRECT_URI` with the values of your Spotify API application:
+```bash
+touch .env && printf "CLIENT_ID:<your-client-id>\nREDIRECT_URI:<your-redirect-uri>\n" > .env
+```
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
+Install the required dependencies with `npm install` or `yarn install` and start a server with:
 ```bash
 npm run dev
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+# Alternatively, you can use the --host flag to listen all addresses.
+# This is particularly useful if you want to run the server from a virtual machine with no browser access.
+# You can use the host machine's browser to interact with the app.
+
+npm run dev -- --host
 ```
 
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
