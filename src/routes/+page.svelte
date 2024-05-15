@@ -10,4 +10,8 @@
 <form method="POST" use:enhance>
     <button>Log out</button>
 </form>
-<h1>User has {data.playlists.total} playlists</h1>
+
+<br>
+<a href="/playlist">Playlist tool</a>
+<br>
+<a href="/discover">Discover</a>

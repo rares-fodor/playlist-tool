@@ -1,5 +1,3 @@
-import { CLIENT_SECRET, CLIENT_ID } from "$env/static/private";
-
 import { redirect } from "@sveltejs/kit";
 import { lucia, spotify_auth } from "$lib/auth";
 import { db } from "$lib/db";
@@ -12,9 +10,13 @@ export const handle: Handle = async ({ event, resolve }) => {
     const sessionId = event.cookies.get(lucia.sessionCookieName);
 
     if (!sessionId) {
-        event.locals.user = null;
-        event.locals.session = null;
-        return resolve(event);
+        const pathname = event.url.pathname
+        if (pathname == '/login' || pathname.startsWith('/api/auth')) {
+            event.locals.user = null;
+            event.locals.session = null;
+            return resolve(event);
+        }
+        return redirect(302, '/login');
     }
 
     const { session, user } = await lucia.validateSession(sessionId);

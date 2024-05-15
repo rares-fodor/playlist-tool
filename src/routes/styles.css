@@ -1,0 +1,17 @@
+:root {
+    --font-body: Arial;
+    font-family: var(--font-body)
+}
+
+body {
+    margin-left: 1vw;
+    margin-right: 1vw;
+    margin-top: 1vw;
+    margin-bottom: 1vw;
+    min-height: 100vh;
+}
+
+h1, h2, p, a {
+    font-weight: 400,
+}
+
