@@ -5,13 +5,28 @@
     import type { PageData } from "./$types";
     import type { SortableEvent } from 'sortablejs';
 
-
     export let data: PageData;
 
-    // Track URIs in the order they appear (or should) in the playlist
-    let playlist_order: string[] = data.tracks.map(item => item.track.uri);
     let playlist_name = data.playlists?.find(e => e.id === data.id)?.name;
 
+    // Track URIs in the order they appear (or should) in the playlist
+    $: playlist_order = data.tracks.map(e => e.track.uri);
+
+    // Durstenfeld shuffle
+    // Modifies data.tracks in place, triggers an update for the track list view and the URI array
+    function shuffleHandler() {
+        let array = data.tracks;
+        for (let i = array.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            let aux = array[i];
+            array[i] = array[j];
+            array[j] = aux;
+        }
+        // Force reactivity trigger (might seem redundant)
+        data.tracks = array;
+    }
+
+    // Executes when drag & drop event ends
     function onEndHandler(event: CustomEvent<SortableEvent>) {
         let old_idx = event.detail.oldIndex;
         let new_idx = event.detail.newIndex;
@@ -43,8 +58,10 @@
         playlist_order = new_order;
     }
 
+    // Send URI array to back-end to be commited to Spotify
     async function commit() {
-        const confirmed = confirm("Commit these changes?");
+        // const confirmed = confirm("Commit these changes?");
+        const confirmed = true;
 
         if (confirmed) {
             const response = await fetch("/api/commit", {
@@ -64,13 +81,14 @@
 
 <div>
     <button on:click={() => {console.log(playlist_order)}}>Log order</button>
+    <button on:click={shuffleHandler}>Shuffle</button>
     <button on:click={commit}>Commit</button>
     <h2>{playlist_name}</h2>
 </div>
 
 <SortableList on:onEnd={onEndHandler} class="list" animation={200}>
-{#each data.tracks as {track}}
-    <Track track={track}/>
+{#each data.tracks as pl_track (pl_track.track.uri)}
+    <Track track={pl_track.track}/>
 {/each}
 </SortableList>
 
