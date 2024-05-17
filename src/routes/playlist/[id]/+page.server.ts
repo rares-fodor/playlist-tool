@@ -1,7 +1,7 @@
 import { error } from "@sveltejs/kit"
 
 import type { APIError, PlaylistedTrack, Page } from "$lib/api_types";
-import type { PageServerLoad } from "./$types"
+import type { Actions, PageServerLoad } from "./$types"
 
 
 export const load: PageServerLoad = async (event) => {
@@ -36,3 +36,9 @@ export const load: PageServerLoad = async (event) => {
     }
 }
 
+export const actions: Actions = {
+    default: async (event) => {
+        let data = await event.request.formData();
+        console.log(data);
+    }
+}

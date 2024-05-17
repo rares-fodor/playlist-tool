@@ -1,6 +1,9 @@
 :root {
     --font-body: Arial;
-    font-family: var(--font-body)
+    --main-text-col: #000000;
+    --off-text-col: #4f4f4f;
+    --off-text-size: 40px;
+    font-family: var(--font-body);
 }
 
 body {
