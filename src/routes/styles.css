@@ -3,6 +3,7 @@
     --main-text-col: #000000;
     --off-text-col: #4f4f4f;
     --off-text-size: 40px;
+    --hover-color: #c4c4c4;
     font-family: var(--font-body);
 }
 
@@ -16,5 +17,19 @@ body {
 
 h1, h2, p, a {
     font-weight: 400,
+}
+
+button {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    text-align: inherit;
+    font: inherit;
+    border-radius: 0;
+    appearance: none;
+}
+
+button:hover {
+    background-color: var(--hover-color)
 }
 

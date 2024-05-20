@@ -17,5 +17,7 @@
         display: grid;
         grid-template-columns: repeat(var(--col-count), minmax(0, 1fr));
         gap: 10px;
+        height: 2em;
+        max-height: 2em;
     }
 </style>

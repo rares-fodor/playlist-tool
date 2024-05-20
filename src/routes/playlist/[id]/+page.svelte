@@ -1,6 +1,8 @@
 <script lang="ts">
     import SortableList from '$lib/components/SortableList.svelte'
+    import TableRow from '../TableRow.svelte';
     import Track from './Track.svelte'
+    import MaterialSymbolsSort from '~icons/material-symbols/sort'
 
     import type { PageData } from "./$types";
     import type { SortableEvent } from 'sortablejs';
@@ -87,6 +89,15 @@
     <h2>{playlist_name}</h2>
 </div>
 
+<TableRow --col-count="2">
+    <button>
+        <div class="table-header title">
+            <span>Title</span>
+            <span><MaterialSymbolsSort viewBox="0 0 25 25" style="font-size: 1em; width: 1em; height: 1em;"/></span>
+        </div></button>
+    <button><div class="table-header">Album</div></button>
+</TableRow>
+
 <SortableList on:onEnd={onEndHandler} class="list" animation={200}>
 <!-- Might be optimized -->
 {#key data.tracks}
@@ -98,4 +109,14 @@
 
 
 <style>
+    .table-header.title {
+        padding-left: calc(2em + 10px);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    button:hover {
+        background-color: #ffffff;
+        text-decoration: underline;
+    }
 </style>

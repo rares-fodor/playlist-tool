@@ -13,7 +13,7 @@
 
 </script>
 
-<div> <!-- SortableJS doesn't play nice with --style-prop --> 
+<div> <!-- SortableJS doesn't play nice with --style-prop used below -->
 <TableRow --col-count="2">
     <svelte:fragment>
         <div class="title">

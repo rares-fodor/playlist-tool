@@ -1,6 +1,5 @@
 <script lang="ts">
     import TableRow from './TableRow.svelte';
-    import Clickable from '$lib/components/Clickable.svelte';
     import RowIcon from '$lib/components/RowIcon.svelte';
 
     import type { PageData } from './$types';
@@ -10,27 +9,33 @@
 
 <ul aria-label="Playlists">
 {#each data.playlists as playlist}
-
 <li>
-<Clickable href={`/playlist/${playlist.id}`}>
-<TableRow --col-count="1">
-    <div class="title">
-    <RowIcon src={playlist.images[0].url}/>
-    <div class="playlist-name">
-        <section>{playlist.name}</section>
-    </div>
-    </div>
-</TableRow>
-</Clickable>
+    <a href={`/playlist/${playlist.id}`}>
+        <TableRow --col-count="1">
+            <div class="title">
+                <RowIcon src={playlist.images[0].url}/>
+                <div class="playlist-name">
+                    <section>{playlist.name}</section>
+                </div>
+            </div>
+        </TableRow>
+    </a>
 </li>
-
 {/each}
 </ul>
+
 
 <style>
     ul {
         padding: 0;
         list-style: none;
+    }
+    a {
+        text-decoration: none;
+        color: var(--main-text-col);
+    }
+    li:hover {
+        background-color: var(--hover-color);
     }
     .title {
         display: flex;
