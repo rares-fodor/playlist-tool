@@ -15,15 +15,12 @@
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
     function shuffleHandler() {
-        let array = data.tracks;
-        for (let i = array.length - 1; i > 0; i--) {
+        for (let i = data.tracks.length - 1; i > 0; i--) {
             let j = Math.floor(Math.random() * (i + 1));
-            let aux = array[i];
-            array[i] = array[j];
-            array[j] = aux;
+            let aux = data.tracks[i];
+            data.tracks[i] = data.tracks[j];
+            data.tracks[j] = aux;
         }
-        // Force reactivity trigger (might seem redundant)
-        data.tracks = array;
     }
 
     // Executes when drag & drop event ends
@@ -60,20 +57,24 @@
 
     // Send URI array to back-end to be commited to Spotify
     async function commit() {
-        // const confirmed = confirm("Commit these changes?");
-        const confirmed = true;
+        const confirmed = confirm("Commit these changes?");
+        let offset = 0;
 
         if (confirmed) {
-            const response = await fetch("/api/commit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: data.id,
-                    state: playlist_order
-                }),
-            });
-            const reply = await response.json();
-            console.log(reply);
+            while (playlist_order.length - offset > 0) {
+                const response = await fetch("/api/commit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: data.id,
+                        offset: offset,
+                        state: playlist_order.slice(offset, Math.min(offset + 100, playlist_order.length - offset))
+                    }),
+                });
+                const reply = await response.json();
+                console.log(reply);
+                offset += 100;
+            }
         }
     }
 </script>
@@ -87,9 +88,12 @@
 </div>
 
 <SortableList on:onEnd={onEndHandler} class="list" animation={200}>
-{#each data.tracks as pl_track (pl_track.track.uri)}
+<!-- Might be optimized -->
+{#key data.tracks}
+{#each data.tracks as pl_track}
     <Track track={pl_track.track}/>
 {/each}
+{/key}
 </SortableList>
 
 

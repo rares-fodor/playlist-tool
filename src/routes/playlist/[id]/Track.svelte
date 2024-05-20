@@ -1,5 +1,8 @@
 <script lang="ts">
-    import type { TrackItem } from '$lib/api_types.ts'
+    import TableRow from "../TableRow.svelte";
+    import RowIcon from "$lib/components/RowIcon.svelte";
+
+    import type { TrackItem } from '$lib/api_types'
 
     export let track: TrackItem;
 
@@ -10,33 +13,30 @@
 
 </script>
 
+<div> <!-- SortableJS doesn't play nice with --style-prop --> 
+<TableRow --col-count="2">
+    <svelte:fragment>
+        <div class="title">
+            <RowIcon src={image.url}/>
+            <div class="label">
+                <section class="track-name">{name}</section>
+                <section class="artists-name">{artists[0].name}</section>
+            </div>
+        </div>
+        <div class="album">
+            {album.name}
+        </div>
+    </svelte:fragment>
+</TableRow>
+</div>
 
-<div class="root">
-<div class="track-entry">
-    <div class="image">
-        <img src={image.url} alt="img">
-    </div>
-    <div class="title">
-        <section class="track-name">{name}</section>
-        <section class="artists-name">{artists[0].name}</section>
-    </div>
-    <div class="album">
-        {album.name}
-    </div>
-</div>
-</div>
 
 <style>
-    .root {
-        border-bottom: 1px solid grey;
-        padding: 0.2em 0;
-    }
-    .track-entry {
-        display: grid;
-        grid-template-columns: 2em repeat(auto-fit, minmax(200px, 1fr)); /* TODO: remove hardcoded image col width */
+    .title {
+        display: flex;
         gap: 10px;
     }
-    .title {
+    .label {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
@@ -61,14 +61,5 @@
         overflow: hidden;
         white-space: nowrap;
     }
-    img {
-        width: 2em;
-        height: 2em;
-    }
-    .image {
-        display: flex;
-        align-items: center;
-    }
-
 </style>
 

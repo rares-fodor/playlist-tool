@@ -4,11 +4,9 @@ import type { RequestEvent } from "./$types";
 import type { APIError } from "$lib/api_types";
 
 
-// TODO return a confirmation of some sort
-
 export async function POST(event: RequestEvent): Promise<Response> {
     const data = await event.request.json();
-    console.log(data.state);
+    console.log(data);
     console.log(JSON.stringify({
             uris: data.state
         })
@@ -24,7 +22,7 @@ export async function POST(event: RequestEvent): Promise<Response> {
             Authorization: `Bearer ${event.locals.session?.access_token}`,
         },
         body: JSON.stringify({
-            uris: data.state
+            uris: data.state,
         })
     });
 

@@ -45,3 +45,6 @@
 <div bind:this={list} class={className}>
     <slot/>
 </div>
+
+<style>
+</style>
