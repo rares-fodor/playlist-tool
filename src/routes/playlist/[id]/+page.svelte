@@ -2,14 +2,25 @@
     import SortableList from '$lib/components/SortableList.svelte'
     import TableRow from '../TableRow.svelte';
     import Track from './Track.svelte'
-    import MaterialSymbolsSort from '~icons/material-symbols/sort'
+    import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down'
+    import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up'
 
     import type { PageData } from "./$types";
     import type { SortableEvent } from 'sortablejs';
 
     export let data: PageData;
 
-    let playlist_name = data.playlists?.find(e => e.id === data.id)?.name;
+    enum Sorted {
+        Ascending,
+        Descending,
+        None
+    }
+
+    const initial_order = [...data.tracks];
+    let title_sorted: Sorted = Sorted.None;
+    let album_sorted: Sorted = Sorted.None;
+
+    let playlist = data.playlists?.find(e => e.id === data.id);
 
     // Track URIs in the order they appear (or should) in the playlist
     $: playlist_order = data.tracks.map(e => e.track.uri);
@@ -79,26 +90,83 @@
             }
         }
     }
+
+    function onTitleClicked() {
+        album_sorted = Sorted.None;
+        if (title_sorted.valueOf() === Sorted.None) {
+            title_sorted = Sorted.Ascending;
+            data.tracks = data.tracks.sort((a, b) => a.track.name.localeCompare(b.track.name))
+        } else if (title_sorted.valueOf() === Sorted.Ascending) {
+            title_sorted = Sorted.Descending;
+            data.tracks = data.tracks.reverse();
+        } else {
+            title_sorted = Sorted.None;
+            data.tracks = [...initial_order]
+        }
+    }
+
+    function onAlbumClicked() {
+        title_sorted = Sorted.None;
+        if (album_sorted.valueOf() === Sorted.None) {
+            album_sorted = Sorted.Ascending;
+            data.tracks = data.tracks.sort((a, b) => a.track.album.name.localeCompare(b.track.album.name))
+        } else if (album_sorted.valueOf() === Sorted.Ascending) {
+            album_sorted = Sorted.Descending;
+            data.tracks = data.tracks.reverse();
+        } else {
+            album_sorted = Sorted.None;
+            data.tracks = [...initial_order]
+        }
+    }
+
 </script>
 
 
+<!-- Title buttons -->
 <div>
     <button on:click={() => {console.log(playlist_order)}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
     <button on:click={commit}>Commit</button>
-    <h2>{playlist_name}</h2>
 </div>
 
+<div class="playlist-greeter">
+    <img class="playlist-icon" src={playlist?.images[0].url} alt="playlist">
+    <div class="playlist-title">
+        <span class="playlist-title title">{playlist?.name}</span>
+        <span class="playlist-title desc">{playlist?.description}</span>
+    </div>
+</div>
+
+<!-- Table header -->
 <TableRow --col-count="2">
-    <button>
+    <button on:click={onTitleClicked}>
         <div class="table-header title">
             <span>Title</span>
-            <span><MaterialSymbolsSort viewBox="0 0 25 25" style="font-size: 1em; width: 1em; height: 1em;"/></span>
-        </div></button>
-    <button><div class="table-header">Album</div></button>
+            <div class="svg-container">
+                {#if title_sorted.valueOf() === Sorted.Ascending}
+                <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                {:else if title_sorted.valueOf() === Sorted.Descending}
+                <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                {/if}
+            </div>
+        </div>
+    </button>
+    <button on:click={onAlbumClicked}>
+        <div class="table-header album">
+            <span>Album</span>
+            <div class="svg-container">
+                {#if album_sorted.valueOf() === Sorted.Ascending}
+                <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                {:else if album_sorted.valueOf() === Sorted.Descending}
+                <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                {/if}
+            </div>
+        </div>
+    </button>
 </TableRow>
 
-<SortableList on:onEnd={onEndHandler} class="list" animation={200}>
+
+<SortableList on:onEnd={onEndHandler} class="list" animation={150}>
 <!-- Might be optimized -->
 {#key data.tracks}
 {#each data.tracks as pl_track}
@@ -109,14 +177,60 @@
 
 
 <style>
-    .table-header.title {
-        padding-left: calc(2em + 10px);
+    .table-header {
         display: flex;
         align-items: center;
         gap: 5px;
     }
+    .table-header.title {
+        padding-left: calc(2em + 10px);
+    }
     button:hover {
         background-color: #ffffff;
         text-decoration: underline;
+    }
+    .svg-container {
+        width: 1em;
+        height: 1em;
+    }
+    .playlist-greeter {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        padding-top: 30px;
+        padding-bottom: 30px;
+    }
+    .playlist-icon {
+        width: 6em;
+        height: 6em;
+    }
+    .playlist-title {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        max-height: 6em;
+        flex-grow: 1;
+        overflow: hidden;
+    }
+    .playlist-title.title {
+        display: inline-block;
+        flex-grow: 1;
+        font-weight: 600;
+        font-size: 2em;
+    }
+    .playlist-title.desc {
+        display: inline-block;
+        flex-shrink: 0;
+        color: var(--off-text-col);
+        min-height: 1em;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    @media (max-width: 450px) {
+        .playlist-title.title {
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
     }
 </style>

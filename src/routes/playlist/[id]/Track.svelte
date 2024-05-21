@@ -41,15 +41,17 @@
         flex-direction: column;
         justify-content: flex-start;
         white-space: nowrap;
+        overflow: hidden;
     }
     .track-name {
         color: var(--main-text-col);
-        text-overflow: ellipsis;
         overflow: hidden;
+        text-overflow: ellipsis;
     }
     .artists-name {
         color: var(--off-text-col);
         font-size: .85em;
+        overflow: hidden;
         text-overflow: ellipsis;
     }
     .album {
