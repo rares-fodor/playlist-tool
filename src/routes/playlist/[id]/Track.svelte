@@ -39,6 +39,7 @@
     .label {
         display: flex;
         flex-direction: column;
+        max-height: 2em;
         justify-content: flex-start;
         white-space: nowrap;
         overflow: hidden;

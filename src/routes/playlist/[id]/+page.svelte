@@ -1,12 +1,17 @@
 <script lang="ts">
     import SortableList from '$lib/components/SortableList.svelte'
     import TableRow from '../TableRow.svelte';
-    import Track from './Track.svelte'
-    import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down'
-    import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up'
+    import Track from './Track.svelte';
+    import RowIcon from '$lib/components/RowIcon.svelte';
+    import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
+    import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
 
     import type { PageData } from "./$types";
     import type { SortableEvent } from 'sortablejs';
+    import type { Playlist } from '$lib/api_types';
+
+    import { decodeHTML } from '$lib/utils';
+
 
     export let data: PageData;
 
@@ -20,9 +25,10 @@
     let title_sorted: Sorted = Sorted.None;
     let album_sorted: Sorted = Sorted.None;
 
+    // Playlist data
     let playlist = data.playlists?.find(e => e.id === data.id);
 
-    // Track URIs in the order they appear (or should) in the playlist
+    // Track URIs in the order they appear (or should appear) in the playlist
     $: playlist_order = data.tracks.map(e => e.track.uri);
 
     // Durstenfeld shuffle
@@ -33,6 +39,29 @@
             let aux = data.tracks[i];
             data.tracks[i] = data.tracks[j];
             data.tracks[j] = aux;
+        }
+    }
+
+    // Send URI array to back-end to be commited to Spotify
+    async function commit() {
+        const confirmed = confirm("Commit these changes?");
+        let offset = 0;
+
+        if (confirmed) {
+            while (playlist_order.length - offset > 0) {
+                const response = await fetch("/api/commit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: data.id,
+                        offset: offset,
+                        state: playlist_order.slice(offset, Math.min(offset + 100, playlist_order.length - offset))
+                    }),
+                });
+                const reply = await response.json();
+                console.log(reply);
+                offset += 100;
+            }
         }
     }
 
@@ -68,27 +97,8 @@
         playlist_order = new_order;
     }
 
-    // Send URI array to back-end to be commited to Spotify
-    async function commit() {
-        const confirmed = confirm("Commit these changes?");
-        let offset = 0;
-
-        if (confirmed) {
-            while (playlist_order.length - offset > 0) {
-                const response = await fetch("/api/commit", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        id: data.id,
-                        offset: offset,
-                        state: playlist_order.slice(offset, Math.min(offset + 100, playlist_order.length - offset))
-                    }),
-                });
-                const reply = await response.json();
-                console.log(reply);
-                offset += 100;
-            }
-        }
+    function onTargetSelected(playlist: Playlist) {
+        console.log(playlist.name);
     }
 
     function onTitleClicked() {
@@ -127,19 +137,30 @@
     <button on:click={() => {console.log(playlist_order)}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
     <button on:click={commit}>Commit</button>
+    <div class="dropdown">
+        <button>Select target</button>
+        <div class="dropdown-content">
+            {#each data.playlists as playlist}
+                <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
+                    <RowIcon src={playlist.images[0].url} />
+                    <span>{playlist.name}</span>
+                </button>
+            {/each}
+        </div>
+    </div>
 </div>
 
 <div class="playlist-greeter">
     <img class="playlist-icon" src={playlist?.images[0].url} alt="playlist">
     <div class="playlist-title">
         <span class="playlist-title title">{playlist?.name}</span>
-        <span class="playlist-title desc">{playlist?.description}</span>
+        <span class="playlist-title desc">{decodeHTML(playlist?.description)}</span>
     </div>
 </div>
 
 <!-- Table header -->
 <TableRow --col-count="2">
-    <button on:click={onTitleClicked}>
+    <button class="text" on:click={onTitleClicked}>
         <div class="table-header title">
             <span>Title</span>
             <div class="svg-container">
@@ -151,7 +172,7 @@
             </div>
         </div>
     </button>
-    <button on:click={onAlbumClicked}>
+    <button class="text" on:click={onAlbumClicked}>
         <div class="table-header album">
             <span>Album</span>
             <div class="svg-container">
@@ -185,14 +206,11 @@
     .table-header.title {
         padding-left: calc(2em + 10px);
     }
-    button:hover {
-        background-color: #ffffff;
-        text-decoration: underline;
-    }
     .svg-container {
         width: 1em;
         height: 1em;
     }
+
     .playlist-greeter {
         display: flex;
         align-items: flex-end;
@@ -225,6 +243,39 @@
         min-height: 1em;
         white-space: nowrap;
         text-overflow: ellipsis;
+    }
+    .playlist-title.desc:empty {
+        display: none;
+    }
+
+    .dropdown {
+        display: inline-block;
+        background-color: var(--accent-bg-color);
+    }
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: var(--accent-bg-color);
+        max-height: 600px;
+        overflow-y: scroll;
+        overscroll-behavior: contain;
+    }
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 5px;
+        max-width: 400px;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+    .dropdown-item:hover {
+        background-color: var(--hover-bg-color);
     }
 
     @media (max-width: 450px) {

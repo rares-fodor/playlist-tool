@@ -32,10 +32,10 @@
     }
     a {
         text-decoration: none;
-        color: var(--main-text-col);
+        color: var(--main-text-color)
     }
     li:hover {
-        background-color: var(--hover-color);
+        background-color: var(--hover-bg-color);
     }
     .title {
         display: flex;

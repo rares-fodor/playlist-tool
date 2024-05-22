@@ -1,11 +1,14 @@
 :root {
     --font-body: Arial;
-    --main-text-col: #000000;
-    --off-text-col: #4f4f4f;
-    --off-text-size: 40px;
-    --hover-color: #c4c4c4;
+    --main-body-color: #ffffff;
+    --main-text-color: #000000;
+    --secondary-font-color: hsl(0, 0%, 75%);
+    --accent-bg-color: hsl(0, 0%, 85%);
+    --hover-bg-color: hsl(0, 0%, 75%);
     font-family: var(--font-body);
+    color: var(--main-text-color, #000000);
 }
+
 
 body {
     margin-left: 1vw;
@@ -13,6 +16,7 @@ body {
     margin-top: 1vw;
     margin-bottom: 1vw;
     min-height: 100vh;
+    background-color: var(--main-body-color, #ffffff)
 }
 
 h1, h2, p, a {
@@ -20,16 +24,23 @@ h1, h2, p, a {
 }
 
 button {
-    background-color: transparent;
-    border: none;
-    padding: 0;
+    background-color: var(--accent-bg-color);
+    padding: 5px;
     text-align: inherit;
     font: inherit;
-    border-radius: 0;
+    border: none;
     appearance: none;
 }
 
 button:hover {
-    background-color: var(--hover-color)
+    background-color: var(--hover-bg-color);
+}
+
+button.text {
+    background-color: var(--main-body-color);
+}
+
+button.text:hover {
+    text-decoration: underline;
 }
 
