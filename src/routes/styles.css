@@ -2,7 +2,7 @@
     --font-body: Arial;
     --main-body-color: #ffffff;
     --main-text-color: #000000;
-    --secondary-font-color: hsl(0, 0%, 75%);
+    --secondary-font-color: hsl(0, 0%, 30%);
     --accent-bg-color: hsl(0, 0%, 85%);
     --hover-bg-color: hsl(0, 0%, 75%);
     font-family: var(--font-body);
@@ -38,9 +38,16 @@ button:hover {
 
 button.text {
     background-color: var(--main-body-color);
+    padding: 0px;
 }
 
 button.text:hover {
     text-decoration: underline;
+}
+
+@media (max-width: 450px) {
+    body {
+        padding: 1em;
+    }
 }
 

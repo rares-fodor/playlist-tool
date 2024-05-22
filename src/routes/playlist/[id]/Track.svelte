@@ -1,6 +1,6 @@
 <script lang="ts">
-    import TableRow from "../TableRow.svelte";
     import RowIcon from "$lib/components/RowIcon.svelte";
+    import TableRow from "../TableRow.svelte";
 
     import type { TrackItem } from '$lib/api_types'
 
@@ -13,52 +13,54 @@
 
 </script>
 
-<div> <!-- SortableJS doesn't play nice with --style-prop used below -->
+<div>
 <TableRow --col-count="2">
     <svelte:fragment>
-        <div class="title">
-            <RowIcon src={image.url}/>
-            <div class="label">
-                <section class="track-name">{name}</section>
-                <section class="artists-name">{artists[0].name}</section>
-            </div>
+    <div class="title-group">
+        <RowIcon src={image.url}/>
+        <div class="label">
+            <section class="label-title">{name}</section>
+            <section class="label-artist">{artists[0].name}</section>
         </div>
-        <div class="album">
-            {album.name}
-        </div>
+    </div>
+    <div class="album">
+        {album.name}
+    </div>
     </svelte:fragment>
 </TableRow>
 </div>
 
 
 <style>
-    .title {
+    .title-group {
         display: flex;
+        min-width: 0;
+        align-items: center;
+        max-height: 2em;
         gap: 10px;
     }
     .label {
         display: flex;
         flex-direction: column;
-        max-height: 2em;
-        justify-content: flex-start;
+        justify-content: center;
         white-space: nowrap;
         overflow: hidden;
     }
-    .track-name {
+    .label-title {
         color: var(--main-text-col);
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .artists-name {
-        color: var(--off-text-col);
-        font-size: .85em;
+    .label-artist {
+        color: var(--secondary-font-color);
         overflow: hidden;
+        font-size: 0.85em;
         text-overflow: ellipsis;
     }
     .album {
         display: flex;
         align-items: center;
-        color: var(--off-text-col);
+        color: var(--secondary-font-color);
         font-size: .95em;
         text-overflow: ellipsis;
         overflow: hidden;
