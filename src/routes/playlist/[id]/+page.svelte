@@ -10,9 +10,6 @@
     import type { SortableEvent } from 'sortablejs';
     import type { Playlist } from '$lib/api_types';
 
-    import { decodeHTML } from '$lib/utils';
-
-
     export let data: PageData;
 
     enum Sorted {
@@ -154,7 +151,7 @@
     <img class="playlist-icon" src={playlist?.images[0].url} alt="playlist">
     <div class="playlist-title">
         <span class="playlist-title title">{playlist?.name}</span>
-        <span class="playlist-title desc">{decodeHTML(playlist?.description)}</span>
+        <span class="playlist-title desc">{@html playlist?.description}</span>
     </div>
 </div>
 
