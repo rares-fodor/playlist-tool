@@ -1,5 +1,5 @@
 <script lang="ts">
-    import RowIcon from "$lib/components/RowIcon.svelte";
+    import Icon from "$lib/components/Icon.svelte";
     import TableRow from "../TableRow.svelte";
 
     import type { TrackItem } from '$lib/api_types'
@@ -17,7 +17,7 @@
 <TableRow --col-count="2">
     <svelte:fragment>
     <div class="title-group">
-        <RowIcon src={image.url}/>
+        <Icon size="medium" src={image.url}/>
         <div class="label">
             <section class="label-title">{name}</section>
             <section class="label-artist">{artists[0].name}</section>

@@ -1,6 +1,6 @@
 <script lang="ts">
     import TableRow from './TableRow.svelte';
-    import RowIcon from '$lib/components/RowIcon.svelte';
+    import Icon from '$lib/components/Icon.svelte';
 
     import type { PageData } from './$types';
     export let data: PageData;
@@ -13,7 +13,7 @@
     <a href={`/playlist/${playlist.id}`}>
         <TableRow --col-count="1">
             <div class="title">
-                <RowIcon src={playlist.images[0].url}/>
+                <Icon size="medium" src={playlist.images[0].url}/>
                 <div class="playlist-name">
                     <section>{playlist.name}</section>
                 </div>

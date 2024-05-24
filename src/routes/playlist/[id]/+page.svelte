@@ -2,13 +2,13 @@
     import SortableList from '$lib/components/SortableList.svelte'
     import TableRow from '../TableRow.svelte';
     import Track from './Track.svelte';
-    import RowIcon from '$lib/components/RowIcon.svelte';
+    import Icon from '$lib/components/Icon.svelte';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
     import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
 
     import type { PageData } from "./$types";
     import type { SortableEvent } from 'sortablejs';
-    import type { Playlist, PlaylistedTrack } from '$lib/api_types';
+    import type { Playlist } from '$lib/api_types';
 
     export let data: PageData;
 
@@ -130,7 +130,7 @@
             <button>Select target</button>
         {:else}
             <button class="dropdown-item">
-                <RowIcon src={target_playlist.images[0].url} size="1em" />
+                <Icon src={target_playlist.images[0].url} size="small" />
                 <span>{target_playlist.name}</span>
             </button>
         {/if}
@@ -139,7 +139,7 @@
             {#each data.playlists as playlist}
                 {#if playlist.id !== current_playlist?.id }
                     <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
-                        <RowIcon src={playlist.images[0].url} size="1em" />
+                        <Icon src={playlist.images[0].url} size="small" />
                         <span>{playlist.name}</span>
                     </button>
                 {/if}
@@ -149,7 +149,7 @@
 </div>
 
 <div class="playlist-greeter">
-    <img class="playlist-icon" src={current_playlist?.images[0].url} alt="playlist">
+    <Icon src={current_playlist?.images[0].url} size="large" />
     <div class="playlist-title">
         <span class="playlist-title title">{current_playlist?.name}</span>
         <span class="playlist-title desc">{@html current_playlist?.description}</span>
@@ -220,10 +220,6 @@
         gap: 10px;
         padding-top: 30px;
         padding-bottom: 30px;
-    }
-    .playlist-icon {
-        width: 6em;
-        height: 6em;
     }
     .playlist-title {
         display: flex;
