@@ -67,31 +67,12 @@
     function onEndHandler(event: CustomEvent<SortableEvent>) {
         let old_idx = event.detail.oldIndex;
         let new_idx = event.detail.newIndex;
-
-        console.log(event.detail.to);
-
-        if (new_idx === undefined || old_idx === undefined || new_idx === old_idx) {
+        if (old_idx === undefined || new_idx === undefined) {
             return;
         }
-
-        let left_slice, right_slice, shifted_slice;
-        let new_order: PlaylistedTrack[] = [];
-
-        if (new_idx < old_idx) {
-            left_slice    = data.tracks.slice(0, new_idx);
-            right_slice   = data.tracks.slice(old_idx + 1, data.tracks.length);
-            shifted_slice = data.tracks.slice(new_idx, old_idx);
-
-            new_order = new_order.concat(left_slice, data.tracks[old_idx], shifted_slice, right_slice);
-        }
-        else if (new_idx > old_idx) {
-            left_slice    = data.tracks.slice(0, old_idx);
-            right_slice   = data.tracks.slice(new_idx + 1, data.tracks.length);
-            shifted_slice = data.tracks.slice(old_idx + 1, new_idx + 1);
-
-            new_order = new_order.concat(left_slice, shifted_slice, data.tracks[old_idx], right_slice);
-        }
-        data.tracks = new_order;
+        const elem = data.tracks[old_idx];
+        data.tracks.splice(old_idx, 1);
+        data.tracks.splice(new_idx, 0, elem);
     }
 
     function onTargetSelected(playlist: Playlist) {
@@ -136,7 +117,7 @@
 
 <!-- Title buttons -->
 <div class="title-buttons">
-    <button on:click={() => {console.log(user_order)}}>Log order</button>
+    <button on:click={() => {console.log(user_order.map(e => e.track.name))}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
     <button on:click={commit}>Commit</button>
 
