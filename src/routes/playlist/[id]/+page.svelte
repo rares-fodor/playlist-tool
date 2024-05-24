@@ -80,6 +80,10 @@
         target_playlist = playlist;
     }
 
+    function onTargetRemoved() {
+        target_playlist = undefined;
+    }
+
     function onTitleClicked() {
         album_sorted = Sorted.None;
         if (title_sorted.valueOf() === Sorted.None) {
@@ -131,6 +135,7 @@
             </button>
         {/if}
         <div class="dropdown-content">
+            <button class="dropdown-item" on:click={() => onTargetRemoved()}>--- Remove selection ---</button>
             {#each data.playlists as playlist}
                 {#if playlist.id !== current_playlist?.id }
                     <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
@@ -263,6 +268,7 @@
         align-items: center;
         gap: 5px;
         max-width: 400px;
+        min-height: calc(1em + 5px);
         width: 100%;
         white-space: nowrap;
         overflow: hidden;
