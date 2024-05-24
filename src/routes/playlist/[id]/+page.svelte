@@ -8,7 +8,7 @@
 
     import type { PageData } from "./$types";
     import type { SortableEvent } from 'sortablejs';
-    import type { Playlist } from '$lib/api_types';
+    import type { Playlist, PlaylistedTrack } from '$lib/api_types';
 
     export let data: PageData;
 
@@ -18,15 +18,14 @@
         None
     }
 
-    const initial_order = [...data.tracks];
     let title_sorted: Sorted = Sorted.None;
     let album_sorted: Sorted = Sorted.None;
+    let target_playlist: Playlist | undefined;
+
+    let user_order = [...data.tracks];
 
     // Playlist data
-    let playlist = data.playlists?.find(e => e.id === data.id);
-
-    // Track URIs in the order they appear (or should appear) in the playlist
-    $: playlist_order = data.tracks.map(e => e.track.uri);
+    let current_playlist = data.playlists?.find(e => e.id === data.id);
 
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
@@ -42,9 +41,11 @@
     // Send URI array to back-end to be commited to Spotify
     async function commit() {
         const confirmed = confirm("Commit these changes?");
-        let offset = 0;
 
         if (confirmed) {
+            let offset = 0;
+            let playlist_order = data.tracks.map(e => e.track.uri);
+
             while (playlist_order.length - offset > 0) {
                 const response = await fetch("/api/commit", {
                     method: "POST",
@@ -74,33 +75,35 @@
         }
 
         let left_slice, right_slice, shifted_slice;
-        let new_order: string[] = [];
+        let new_order: PlaylistedTrack[] = [];
 
         if (new_idx < old_idx) {
-            left_slice    = playlist_order.slice(0, new_idx);
-            right_slice   = playlist_order.slice(old_idx + 1, playlist_order.length);
-            shifted_slice = playlist_order.slice(new_idx, old_idx);
+            left_slice    = data.tracks.slice(0, new_idx);
+            right_slice   = data.tracks.slice(old_idx + 1, data.tracks.length);
+            shifted_slice = data.tracks.slice(new_idx, old_idx);
 
-            new_order = new_order.concat(left_slice, playlist_order[old_idx], shifted_slice, right_slice);
+            new_order = new_order.concat(left_slice, data.tracks[old_idx], shifted_slice, right_slice);
         }
         else if (new_idx > old_idx) {
-            left_slice    = playlist_order.slice(0, old_idx);
-            right_slice   = playlist_order.slice(new_idx + 1, playlist_order.length);
-            shifted_slice = playlist_order.slice(old_idx + 1, new_idx + 1);
+            left_slice    = data.tracks.slice(0, old_idx);
+            right_slice   = data.tracks.slice(new_idx + 1, data.tracks.length);
+            shifted_slice = data.tracks.slice(old_idx + 1, new_idx + 1);
 
-            new_order = new_order.concat(left_slice, shifted_slice, playlist_order[old_idx], right_slice);
+            new_order = new_order.concat(left_slice, shifted_slice, data.tracks[old_idx], right_slice);
         }
-
-        playlist_order = new_order;
+        data.tracks = new_order;
     }
 
     function onTargetSelected(playlist: Playlist) {
         console.log(playlist.name);
+        target_playlist = playlist;
     }
 
     function onTitleClicked() {
         album_sorted = Sorted.None;
         if (title_sorted.valueOf() === Sorted.None) {
+            // Save user order to restore when reverting sort
+            user_order = [...data.tracks];
             title_sorted = Sorted.Ascending;
             data.tracks = data.tracks.sort((a, b) => a.track.name.localeCompare(b.track.name))
         } else if (title_sorted.valueOf() === Sorted.Ascending) {
@@ -108,13 +111,15 @@
             data.tracks = data.tracks.reverse();
         } else {
             title_sorted = Sorted.None;
-            data.tracks = [...initial_order]
+            data.tracks = [...user_order]
         }
     }
 
     function onAlbumClicked() {
         title_sorted = Sorted.None;
         if (album_sorted.valueOf() === Sorted.None) {
+            // Save user order to restore when reverting sort
+            user_order = [...data.tracks];
             album_sorted = Sorted.Ascending;
             data.tracks = data.tracks.sort((a, b) => a.track.album.name.localeCompare(b.track.album.name))
         } else if (album_sorted.valueOf() === Sorted.Ascending) {
@@ -122,7 +127,7 @@
             data.tracks = data.tracks.reverse();
         } else {
             album_sorted = Sorted.None;
-            data.tracks = [...initial_order]
+            data.tracks = [...user_order]
         }
     }
 
