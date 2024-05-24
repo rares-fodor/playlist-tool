@@ -23,6 +23,12 @@ h1, h2, p, a {
     font-weight: 400,
 }
 
+span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
 button {
     background-color: var(--accent-bg-color);
     padding: 5px;

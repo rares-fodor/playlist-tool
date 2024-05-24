@@ -135,28 +135,38 @@
 
 
 <!-- Title buttons -->
-<div>
-    <button on:click={() => {console.log(playlist_order)}}>Log order</button>
+<div class="title-buttons">
+    <button on:click={() => {console.log(user_order)}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
     <button on:click={commit}>Commit</button>
+
     <div class="dropdown">
-        <button>Select target</button>
+        {#if target_playlist === undefined}
+            <button>Select target</button>
+        {:else}
+            <button class="dropdown-item">
+                <RowIcon src={target_playlist.images[0].url} size="1em" />
+                <span>{target_playlist.name}</span>
+            </button>
+        {/if}
         <div class="dropdown-content">
             {#each data.playlists as playlist}
-                <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
-                    <RowIcon src={playlist.images[0].url} />
-                    <span>{playlist.name}</span>
-                </button>
+                {#if playlist.id !== current_playlist?.id }
+                    <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
+                        <RowIcon src={playlist.images[0].url} size="1em" />
+                        <span>{playlist.name}</span>
+                    </button>
+                {/if}
             {/each}
         </div>
     </div>
 </div>
 
 <div class="playlist-greeter">
-    <img class="playlist-icon" src={playlist?.images[0].url} alt="playlist">
+    <img class="playlist-icon" src={current_playlist?.images[0].url} alt="playlist">
     <div class="playlist-title">
-        <span class="playlist-title title">{playlist?.name}</span>
-        <span class="playlist-title desc">{@html playlist?.description}</span>
+        <span class="playlist-title title">{current_playlist?.name}</span>
+        <span class="playlist-title desc">{@html current_playlist?.description}</span>
     </div>
 </div>
 
@@ -167,9 +177,9 @@
             <span>Title</span>
             <div class="svg-container">
                 {#if title_sorted.valueOf() === Sorted.Ascending}
-                <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                    <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
                 {:else if title_sorted.valueOf() === Sorted.Descending}
-                <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                    <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
                 {/if}
             </div>
         </div>
@@ -200,6 +210,11 @@
 
 
 <style>
+    .title-buttons {
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+    }
     .table-header {
         display: flex;
         align-items: center;
@@ -265,8 +280,7 @@
     .dropdown-item {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 5px;
+        gap: 5px;
         max-width: 400px;
         width: 100%;
         white-space: nowrap;
