@@ -121,9 +121,14 @@
 
 <!-- Title buttons -->
 <div class="title-buttons">
-    <button on:click={() => {console.log(user_order.map(e => e.track.name))}}>Log order</button>
+    <button on:click={() => {console.log(current_playlist?.owner); console.log(data.user)}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
-    <button on:click={commit}>Commit</button>
+
+    {#if current_playlist?.owner.id === data.user?.spotify_id }
+        <button on:click={commit}>Commit</button>
+    {:else}
+        <button class="disabled-button" on:click={() => alert("Cannot make changes, you are not the owner")}>Commit</button>
+    {/if}
 
     <div class="dropdown">
         {#if target_playlist === undefined}
@@ -275,6 +280,10 @@
     }
     .dropdown-item:hover {
         background-color: var(--hover-bg-color);
+    }
+
+    .disabled-button {
+        opacity: 0.5;
     }
 
     @media (max-width: 450px) {
