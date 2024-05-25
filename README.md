@@ -10,9 +10,9 @@ Clone this repository and navigate to the project directory:
 git clone --depth 1 https://github.com/rares-fodor/playlist-tool.git && cd playlist-tool
 ```
 
-Create an `.env` file and set your `CLIENT_ID` and `REDIRECT_URI` with the values of your Spotify API application:
+Create an `.env` file and set your `CLIENT_ID`, `CLIENT_SECRET` and `REDIRECT_URI` with the values of your Spotify API application:
 ```bash
-touch .env && printf "CLIENT_ID:<your-client-id>\nREDIRECT_URI:<your-redirect-uri>\n" > .env
+touch .env && printf "CLIENT_ID=<your-client-id>\nCLIENT_SECRET=<your-client-secret>\nREDIRECT_URI=<your-redirect-uri>\n" > .env
 ```
 
 Install the required dependencies with `npm install` or `yarn install` and start a server with:
