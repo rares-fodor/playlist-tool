@@ -13,8 +13,6 @@
 
     let sizeValue = getSizeValue(size);
 
-    $: console.log(sizeValue);
-
 </script>
 
 <img src={src} alt="icon" style={`width: ${sizeValue}; height: ${sizeValue}`}/>
