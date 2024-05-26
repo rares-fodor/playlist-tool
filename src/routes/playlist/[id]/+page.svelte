@@ -121,13 +121,17 @@
 
 <!-- Title buttons -->
 <div class="title-buttons">
-    <button on:click={() => {console.log(current_playlist?.owner); console.log(data.user)}}>Log order</button>
+    <button on:click={() => {}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
 
-    {#if current_playlist?.owner.id === data.user?.spotify_id }
-        <button on:click={commit}>Commit</button>
+    {#if current_playlist?.owner.id !== data.user?.spotify_id}
+        <button class="disabled-button" on:click={() => alert("Cannot make changes, you are not the owner!")}>Commit</button>
+    {:else if current_playlist?.collaborative}
+        <button class="disabled-button" on:click={() => alert("Cannot make changes to collaborative playlist!")}>Commit</button>
+    {:else if data.tracks.length > 100}
+        <button class="disabled-button" on:click={() => alert("This playlist is too long (> 100 tracks) to commit to, choose a target instead!")}>Commit</button>
     {:else}
-        <button class="disabled-button" on:click={() => alert("Cannot make changes, you are not the owner")}>Commit</button>
+        <button on:click={commit}>Commit</button>
     {/if}
 
     <div class="dropdown">
@@ -284,6 +288,7 @@
 
     .disabled-button {
         opacity: 0.5;
+        cursor: not-allowed;
     }
 
     @media (max-width: 450px) {

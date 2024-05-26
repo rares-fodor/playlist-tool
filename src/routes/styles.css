@@ -36,6 +36,7 @@ button {
     font: inherit;
     border: none;
     appearance: none;
+    cursor: pointer;
 }
 
 button:hover {
