@@ -25,7 +25,7 @@
     let user_order = [...data.tracks];
 
     // Playlist data
-    let current_playlist = data.playlists?.find(e => e.id === data.id);
+    let current_playlist = data.playlists.find(e => e.id === data.id)!;
 
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
@@ -124,9 +124,9 @@
     <button on:click={() => {}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
 
-    {#if current_playlist?.owner.id !== data.user?.spotify_id}
+    {#if current_playlist.owner.id !== data.user?.spotify_id}
         <button class="disabled-button" on:click={() => alert("Cannot make changes, you are not the owner!")}>Commit</button>
-    {:else if current_playlist?.collaborative}
+    {:else if current_playlist.collaborative}
         <button class="disabled-button" on:click={() => alert("Cannot make changes to collaborative playlist!")}>Commit</button>
     {:else if data.tracks.length > 100}
         <button class="disabled-button" on:click={() => alert("This playlist is too long (> 100 tracks) to commit to, choose a target instead!")}>Commit</button>
@@ -146,7 +146,7 @@
         <div class="dropdown-content">
             <button class="dropdown-item" on:click={() => onTargetRemoved()}>--- Remove selection ---</button>
             {#each data.playlists as playlist}
-                {#if playlist.id !== current_playlist?.id }
+                {#if playlist.id !== current_playlist.id }
                     <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
                         <Icon src={playlist.images[0].url} size="small" />
                         <span>{playlist.name}</span>
@@ -158,10 +158,10 @@
 </div>
 
 <div class="playlist-greeter">
-    <Icon src={current_playlist?.images[0].url} size="large" />
+    <Icon src={current_playlist.images[0].url} size="large" />
     <div class="playlist-title">
-        <span class="playlist-title title">{current_playlist?.name}</span>
-        <span class="playlist-title desc">{@html current_playlist?.description}</span>
+        <span class="playlist-title title">{current_playlist.name}</span>
+        <span class="playlist-title desc">{@html current_playlist.description}</span>
     </div>
 </div>
 
