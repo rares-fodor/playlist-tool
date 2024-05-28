@@ -9,7 +9,9 @@
     let name = track.name;
     let artists = track.artists;
     let album = track.album;
-    let image = album.images[0];
+
+    // Spotify states the url field is not nullable but some albums DO have missing album covers
+    let imageUrl = album.images[0]?.url ?? `https://placehold.co/300?text=${album.name.at(0)}`;
 
 </script>
 
@@ -17,7 +19,7 @@
 <TableRow --col-count="2">
     <svelte:fragment>
     <div class="title-group">
-        <Icon size="medium" src={image.url}/>
+        <Icon size="medium" src={imageUrl}/>
         <div class="label">
             <section class="label-title">{name}</section>
             <section class="label-artist">{artists[0].name}</section>
