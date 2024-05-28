@@ -4,32 +4,33 @@ import type { APIError, Page, Playlist } from "$lib/api_types";
 import type { LayoutServerLoad } from "./$types";
 
 
-
 export const load: LayoutServerLoad = async (event) => {
-    let url = `https://api.spotify.com/v1/users/${event.locals.user?.spotify_id}/playlists`;
-    let pages: Page<Playlist>[] = [];
+    const user_id = event.locals.user?.spotify_id;
+    console.log(`[${new Date(Date.now()).toISOString()}]: Requesting playlists for user ${user_id}`)
 
-    // Get all pages
-    while (true) {
-        const response = await fetch(url, {
-            headers: {
-                Authorization: `Bearer ${event.locals.session?.access_token}`
-            }
-        });
-        if (response.status !== 200) {
-            const err = (await response.json() as APIError).error;
-            return error(err.status, err.message);
-        }
-
-        const playlists_at_offset: Page<Playlist> = await response.json();
-        pages.push(playlists_at_offset);
-
-        if (playlists_at_offset.next === null) {
-            break;
-        }
-
-        url = playlists_at_offset.next
+    const limit = 50;
+    const base_url = `https://api.spotify.com/v1/users/${user_id}/playlists?limit=${limit}`;
+    const headers = {
+        Authorization: `Bearer ${event.locals.session?.access_token}`
     }
+
+    const initial_response = await fetch(base_url, { headers });
+    if (initial_response.status !== 200) {
+        const err = (await initial_response.json() as APIError).error;
+        return error(err.status, err.message);
+    }
+
+    const initial_page: Page<Playlist> = await initial_response.json();
+    const total_playlists = initial_page.total;
+
+    const requests = []
+    for (let offset = limit; offset < total_playlists; offset += limit) {
+        const url = `${base_url}&offset=${offset}`
+        requests.push(fetch(url, { headers} ).then(res => res.json()));
+    }
+
+    const pages: Page<Playlist>[] = await Promise.all(requests);
+    pages.unshift(initial_page)
 
     // Flatten items field of all Page items returned
     const playlists: Playlist[] = pages.flatMap((page) => page.items)

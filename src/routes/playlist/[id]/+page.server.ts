@@ -5,34 +5,37 @@ import type { Actions, PageServerLoad } from "./$types"
 
 
 export const load: PageServerLoad = async (event) => {
-    let url = `https://api.spotify.com/v1/playlists/${event.params.id}/tracks`;
-    let pages: Page<PlaylistedTrack>[] = [];
-
-    while (true) {
-        const response = await fetch(url, {
-            headers: {
-                Authorization: `Bearer ${event.locals.session?.access_token}`
-            }
-        });
-        if (response.status !== 200) {
-            const err = (await response.json() as APIError).error;
-            return error(err.status, err.message);
-        }
-
-        const tracks_at_offset: Page<PlaylistedTrack> = await response.json();
-        pages.push(tracks_at_offset);
-
-        if (tracks_at_offset.next === null) {
-            break;
-        }
-        url = tracks_at_offset.next;
+    console.log(`[${new Date(Date.now()).toISOString()}]: Requesting tracks for playlist ${event.params.id}`)
+    const limit = 50;
+    const base_url = `https://api.spotify.com/v1/playlists/${event.params.id}/tracks?limit=${limit}`;
+    const access_token = event.locals.session?.access_token;
+    const headers = {
+        Authorization: `Bearer ${access_token}`
     }
 
-    const tracks: PlaylistedTrack[] = pages.flatMap((page) => page.items)
+    const initial_response = await fetch(base_url, { headers });
+    if (initial_response.status !== 200) {
+        const err = (await initial_response.json() as APIError).error;
+        return error(err.status, err.message);
+    }
+
+    const initial_page: Page<PlaylistedTrack> = await initial_response.json();
+    const total_tracks = initial_page.total;
+
+    const requests = [];
+    for (let offset = limit; offset < total_tracks; offset += limit) {
+        const url = `${base_url}&offset=${offset}`;
+        requests.push(fetch(url, { headers }).then(res => res.json()));
+    }
+
+    const pages: Page<PlaylistedTrack>[] = await Promise.all(requests);
+    pages.unshift(initial_page);
+
+    const tracks: PlaylistedTrack[] = pages.flatMap(page => page.items);
 
     return {
         id: event.params.id,
-        tracks: tracks,
+        tracks: tracks
     }
 }
 
