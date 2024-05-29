@@ -6,14 +6,7 @@ import type { APIError } from "$lib/api_types";
 
 export async function POST(event: RequestEvent): Promise<Response> {
     const data = await event.request.json();
-    console.log(data);
-    console.log(JSON.stringify({
-            uris: data.state
-        })
-    )
-
     const url = `https://api.spotify.com/v1/playlists/${data.id}/tracks`;
-    console.log(url);
 
     const response = await fetch(url, {
         method: "PUT",
