@@ -40,26 +40,21 @@
 
     // Send URI array to back-end to be commited to Spotify
     async function commit() {
-        const confirmed = confirm("Commit these changes?");
+        const confirmed = confirm(`Commit these changes to ${target_playlist?.name ?? current_playlist.name}?`);
 
         if (confirmed) {
-            let offset = 0;
             let playlist_order = data.tracks.map(e => e.track.uri);
 
-            while (playlist_order.length - offset > 0) {
-                const response = await fetch("/api/commit", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        id: data.id,
-                        offset: offset,
-                        state: playlist_order.slice(offset, Math.min(offset + 100, playlist_order.length - offset))
-                    }),
-                });
-                const reply = await response.json();
-                console.log(reply);
-                offset += 100;
-            }
+            const response = await fetch("/api/commit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: target_playlist?.id ?? current_playlist.id,
+                    state: playlist_order.slice(0, 100),
+                }),
+            });
+            const reply = await response.json();
+            console.log(reply);
         }
     }
 
@@ -124,7 +119,9 @@
     <button on:click={() => {}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
 
-    {#if current_playlist.owner.id !== data.user?.spotify_id}
+    {#if target_playlist !== undefined }
+        <button on:click={commit}>Commit</button>
+    {:else if current_playlist.owner.id !== data.user?.spotify_id }
         <button class="disabled-button" on:click={() => alert("Cannot make changes, you are not the owner!")}>Commit</button>
     {:else if current_playlist.collaborative}
         <button class="disabled-button" on:click={() => alert("Cannot make changes to collaborative playlist!")}>Commit</button>
