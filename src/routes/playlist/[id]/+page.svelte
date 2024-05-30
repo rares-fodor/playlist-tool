@@ -40,15 +40,25 @@
     let current_playlist = data.playlists.find(e => e.id === data.id)!;
     let target_playlist: Playlist | undefined;
 
-    const isSourcePlaylistOwned         = current_playlist.owner.id === data.user?.spotify_id;
-    const isSourcePlaylistOverLimit     = data.tracks.length > 100;
-    const isSourcePlaylistCollaborative = current_playlist.collaborative;
+    const playlistTooLarge = (playlist: Playlist) => {
+        return playlist.tracks.total > 100;
+    }
+    const playlistNotOnwned = (playlist: Playlist) => {
+        return playlist.owner.id !== data.user?.spotify_id;
+    }
+    const playlistCollaborative = (playlist: Playlist) => {
+        return playlist.collaborative;
+    }
 
-    $: isCommitDisabled = !((isSourcePlaylistOwned
-        && !isSourcePlaylistOverLimit
-        && !isSourcePlaylistCollaborative)
-        || target_playlist !== undefined);
+    const canCommit = (playlist: Playlist) => {
+        return !playlistTooLarge(playlist) &&
+            !playlistNotOnwned(playlist) &&
+            !playlistCollaborative(playlist)
+    }
 
+    $: isCommitDisabled = !canCommit(current_playlist) && target_playlist === undefined;
+
+    const valid_targets = data.playlists.filter(canCommit);
 
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
@@ -64,11 +74,11 @@
     // Send URI array to back-end to be commited to Spotify
     async function commit() {
         if (isCommitDisabled) {
-            if (!isSourcePlaylistOwned) {
+            if (playlistNotOnwned(current_playlist)) {
                 alert("Cannot commit changes, you are not the playlist owner!");
-            } else if (isSourcePlaylistOverLimit) {
+            } else if (playlistTooLarge(current_playlist)) {
                 alert("This playlist is too long (> 100 tracks) to commit to, choose a target instead!");
-            } else if (isSourcePlaylistCollaborative) {
+            } else if (playlistCollaborative(current_playlist)) {
                 alert("Cannot commit changes, this playlist is collaborative!");
             }
             return;
@@ -161,7 +171,7 @@
         {/if}
         <div class="dropdown-content">
             <button class="dropdown-item" on:click={() => onTargetRemoved()}>--- Remove selection ---</button>
-            {#each data.playlists as playlist}
+            {#each valid_targets as playlist}
                 {#if playlist.id !== current_playlist.id }
                     <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
                         <Icon src={playlist.images[0].url} size="small" />
