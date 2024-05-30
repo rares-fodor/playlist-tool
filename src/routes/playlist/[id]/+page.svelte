@@ -12,16 +12,29 @@
 
     export let data: PageData;
 
-    enum Sorted {
-        Ascending,
-        Descending,
-        None
+    enum SortDirection {
+        None = 0,
+        Ascending = 1,
+        Descending = -1,
+    }
+
+    // Update both when expanding to more/other columns
+    // NOTE: Should be refactored, these values are used as both the button text and css Subclass
+    type SortBy = 'Custom' | 'Title' | 'Album';
+    // Allow each block to infer type correctly (skip 'custom', we don't need a button for it)
+    const sortableColumns: SortBy[] = ['Title', 'Album'];
+
+    interface SortState {
+        column: SortBy,
+        direction: SortDirection,
+    }
+    let sortState: SortState = {
+        column: 'Custom',
+        direction: SortDirection.None,
     }
 
     // Manual sort order, saved when sorting by table header (title/album)
     let user_order = [...data.tracks];
-    let title_sorted: Sorted = Sorted.None;
-    let album_sorted: Sorted = Sorted.None;
 
     // Playlist data
     let current_playlist = data.playlists.find(e => e.id === data.id)!;
@@ -99,37 +112,34 @@
         target_playlist = undefined;
     }
 
-    function onTitleClicked() {
-        album_sorted = Sorted.None;
-        if (title_sorted.valueOf() === Sorted.None) {
-            // Save user order to restore when reverting sort
-            user_order = [...data.tracks];
-            title_sorted = Sorted.Ascending;
-            data.tracks = data.tracks.sort((a, b) => a.track.name.localeCompare(b.track.name))
-        } else if (title_sorted.valueOf() === Sorted.Ascending) {
-            title_sorted = Sorted.Descending;
-            data.tracks = data.tracks.reverse();
-        } else {
-            title_sorted = Sorted.None;
-            data.tracks = [...user_order]
+    function sortTracks(column: SortBy, direction: SortDirection) {
+        if (column === 'Title') {
+            data.tracks = data.tracks.sort((a, b) => direction * a.track.name.localeCompare(b.track.name));
+        } else if (column === 'Album') {
+            data.tracks = data.tracks.sort((a, b) => direction * a.track.album.name.localeCompare(b.track.album.name));
         }
     }
 
-    function onAlbumClicked() {
-        title_sorted = Sorted.None;
-        if (album_sorted.valueOf() === Sorted.None) {
-            // Save user order to restore when reverting sort
+    function onColumnClicked(column: SortBy) {
+        if (sortState.column === 'Custom' && sortState.direction === SortDirection.None) {
             user_order = [...data.tracks];
-            album_sorted = Sorted.Ascending;
-            data.tracks = data.tracks.sort((a, b) => a.track.album.name.localeCompare(b.track.album.name))
-        } else if (album_sorted.valueOf() === Sorted.Ascending) {
-            album_sorted = Sorted.Descending;
-            data.tracks = data.tracks.reverse();
+        }
+
+        if (sortState.column === column) {
+            sortState.direction = (sortState.direction + 2) % 3 - 1;
         } else {
-            album_sorted = Sorted.None;
-            data.tracks = [...user_order]
+            sortState.column = column;
+            sortState.direction = SortDirection.Ascending;
+        }
+
+        if (sortState.direction === SortDirection.None) {
+            data.tracks = [...user_order];
+            sortState.column = 'Custom';
+        } else {
+            sortTracks(column, sortState.direction);
         }
     }
+
 
 </script>
 
@@ -172,31 +182,23 @@
 </div>
 
 <!-- Table header -->
-<TableRow --col-count="2">
-    <button class="text" on:click={onTitleClicked}>
-        <div class="table-header title">
-            <span>Title</span>
+<TableRow --padding-left="2em" --col-count="2">
+{#each sortableColumns as column}
+    <button class="text" on:click={() => onColumnClicked(column)}>
+        <div class={`table-header ${column}`}>
+            <span>{column}</span>
             <div class="svg-container">
-                {#if title_sorted.valueOf() === Sorted.Ascending}
+                {#if sortState.column === column}
+                {#if sortState.direction === SortDirection.Ascending}
                     <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
-                {:else if title_sorted.valueOf() === Sorted.Descending}
+                {:else if sortState.direction === SortDirection.Descending}
                     <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
                 {/if}
-            </div>
-        </div>
-    </button>
-    <button class="text" on:click={onAlbumClicked}>
-        <div class="table-header album">
-            <span>Album</span>
-            <div class="svg-container">
-                {#if album_sorted.valueOf() === Sorted.Ascending}
-                <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
-                {:else if album_sorted.valueOf() === Sorted.Descending}
-                <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
                 {/if}
             </div>
         </div>
     </button>
+{/each}
 </TableRow>
 
 
@@ -221,7 +223,7 @@
         align-items: center;
         gap: 5px;
     }
-    .table-header.title {
+    .table-header.Title {
         padding-left: calc(2em + 10px);
     }
     .svg-container {
