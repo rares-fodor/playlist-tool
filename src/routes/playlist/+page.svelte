@@ -30,12 +30,12 @@
         padding: 0;
         list-style: none;
     }
-    a {
-        text-decoration: none;
-        color: var(--main-text-color)
-    }
     li:hover {
         background-color: var(--hover-bg-color);
+    }
+    a {
+        padding: 0;
+        background-color: var(--main-body-color);
     }
     .title {
         display: flex;

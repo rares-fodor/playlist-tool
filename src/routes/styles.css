@@ -29,6 +29,21 @@ span {
     text-overflow: ellipsis;
 }
 
+a {
+    text-decoration: none;
+    color: var(--main-text-color);
+    background-color: var(--accent-bg-color);
+    padding: 5px;
+    text-align: inherit;
+    font: inherit;
+    appearance: none;
+    cursor: pointer;
+}
+
+a:hover {
+    background-color: var(--hover-bg-color);
+}
+
 button {
     background-color: var(--accent-bg-color);
     padding: 5px;

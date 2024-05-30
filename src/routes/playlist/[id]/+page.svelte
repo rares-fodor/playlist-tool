@@ -181,6 +181,10 @@
             {/each}
         </div>
     </div>
+
+    {#if target_playlist !== undefined}
+        <a data-sveltekit-reload href={`/playlist/${target_playlist.id}`}>Go to target</a>
+    {/if}
 </div>
 
 <div class="playlist-greeter">
