@@ -18,14 +18,24 @@
         None
     }
 
+    // Manual sort order, saved when sorting by table header (title/album)
+    let user_order = [...data.tracks];
     let title_sorted: Sorted = Sorted.None;
     let album_sorted: Sorted = Sorted.None;
-    let target_playlist: Playlist | undefined;
-
-    let user_order = [...data.tracks];
 
     // Playlist data
     let current_playlist = data.playlists.find(e => e.id === data.id)!;
+    let target_playlist: Playlist | undefined;
+
+    const isSourcePlaylistOwned         = current_playlist.owner.id === data.user?.spotify_id;
+    const isSourcePlaylistOverLimit     = data.tracks.length > 100;
+    const isSourcePlaylistCollaborative = current_playlist.collaborative;
+
+    $: isCommitDisabled = !((isSourcePlaylistOwned
+        && !isSourcePlaylistOverLimit
+        && !isSourcePlaylistCollaborative)
+        || target_playlist !== undefined);
+
 
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
@@ -40,8 +50,18 @@
 
     // Send URI array to back-end to be commited to Spotify
     async function commit() {
-        const confirmed = confirm(`Commit these changes to ${target_playlist?.name ?? current_playlist.name}?`);
+        if (isCommitDisabled) {
+            if (!isSourcePlaylistOwned) {
+                alert("Cannot commit changes, you are not the playlist owner!");
+            } else if (isSourcePlaylistOverLimit) {
+                alert("This playlist is too long (> 100 tracks) to commit to, choose a target instead!");
+            } else if (isSourcePlaylistCollaborative) {
+                alert("Cannot commit changes, this playlist is collaborative!");
+            }
+            return;
+        }
 
+        const confirmed = confirm(`Commit these changes to ${target_playlist?.name ?? current_playlist.name}?`);
         if (confirmed) {
             let playlist_order = data.tracks.map(e => e.track.uri);
 
@@ -118,18 +138,7 @@
 <div class="title-buttons">
     <button on:click={() => {}}>Log order</button>
     <button on:click={shuffleHandler}>Shuffle</button>
-
-    {#if target_playlist !== undefined }
-        <button on:click={commit}>Commit</button>
-    {:else if current_playlist.owner.id !== data.user?.spotify_id }
-        <button class="disabled-button" on:click={() => alert("Cannot make changes, you are not the owner!")}>Commit</button>
-    {:else if current_playlist.collaborative}
-        <button class="disabled-button" on:click={() => alert("Cannot make changes to collaborative playlist!")}>Commit</button>
-    {:else if data.tracks.length > 100}
-        <button class="disabled-button" on:click={() => alert("This playlist is too long (> 100 tracks) to commit to, choose a target instead!")}>Commit</button>
-    {:else}
-        <button on:click={commit}>Commit</button>
-    {/if}
+    <button class:disabled-button={isCommitDisabled} on:click={commit}>Commit</button>
 
     <div class="dropdown">
         {#if target_playlist === undefined}
