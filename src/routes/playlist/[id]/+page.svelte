@@ -155,36 +155,40 @@
 
 
 <!-- Title buttons -->
-<div class="title-buttons">
-    <button on:click={() => {}}>Log order</button>
-    <button on:click={shuffleHandler}>Shuffle</button>
-    <button class:disabled-button={isCommitDisabled} on:click={commit}>Commit</button>
-
-    <div class="dropdown">
-        {#if target_playlist === undefined}
-            <button>Select target</button>
-        {:else}
-            <button class="dropdown-item">
-                <Icon src={target_playlist.images[0].url} size="small" />
-                <span>{target_playlist.name}</span>
-            </button>
-        {/if}
-        <div class="dropdown-content">
-            <button class="dropdown-item" on:click={() => onTargetRemoved()}>--- Remove selection ---</button>
-            {#each valid_targets as playlist}
-                {#if playlist.id !== current_playlist.id }
-                    <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
-                        <Icon src={playlist.images[0].url} size="small" />
-                        <span>{playlist.name}</span>
-                    </button>
-                {/if}
-            {/each}
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr">
+    <div class="title-buttons">
+        <button on:click={() => {}}>Log order</button>
+        <button on:click={shuffleHandler}>Shuffle</button>
+    </div>
+    <div style="display: flex; justify-content: center; gap: 5px">
+        <div class="dropdown">
+            {#if target_playlist === undefined}
+                <button>Select target</button>
+            {:else}
+                <button class="dropdown-item">
+                    <Icon src={target_playlist.images[0].url} size="small" />
+                    <span>{target_playlist.name}</span>
+                </button>
+            {/if}
+            <div class="dropdown-content">
+                <button class="dropdown-item" on:click={() => onTargetRemoved()}>--- Remove selection ---</button>
+                {#each valid_targets as playlist}
+                    {#if playlist.id !== current_playlist.id }
+                        <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
+                            <Icon src={playlist.images[0].url} size="small" />
+                            <span>{playlist.name}</span>
+                        </button>
+                    {/if}
+                {/each}
+            </div>
         </div>
+        {#if target_playlist !== undefined}
+            <a data-sveltekit-reload href={`/playlist/${target_playlist.id}`}>Go to target</a>
+        {/if}
     </div>
 
-    {#if target_playlist !== undefined}
-        <a data-sveltekit-reload href={`/playlist/${target_playlist.id}`}>Go to target</a>
-    {/if}
+    <button style="margin-left: auto;" class:disabled-button={isCommitDisabled} on:click={commit}>Commit</button>
+
 </div>
 
 <div class="playlist-greeter">
@@ -196,18 +200,18 @@
 </div>
 
 <!-- Table header -->
-<TableRow --padding-left="2em" --col-count="2">
+<TableRow --col-count="2">
 {#each sortableColumns as column}
     <button class="text" on:click={() => onColumnClicked(column)}>
         <div class={`table-header ${column}`}>
             <span>{column}</span>
             <div class="svg-container">
                 {#if sortState.column === column}
-                {#if sortState.direction === SortDirection.Ascending}
-                    <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
-                {:else if sortState.direction === SortDirection.Descending}
-                    <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
-                {/if}
+                    {#if sortState.direction === SortDirection.Ascending}
+                        <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                    {:else if sortState.direction === SortDirection.Descending}
+                        <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                    {/if}
                 {/if}
             </div>
         </div>
