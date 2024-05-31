@@ -2,6 +2,7 @@
     import SortableList from '$lib/components/SortableList.svelte'
     import TableRow from '../TableRow.svelte';
     import Track from './Track.svelte';
+    import ConfirmModal from '$lib/components/modal/ConfirmModal.svelte';
     import Icon from '$lib/components/Icon.svelte';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
     import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
@@ -57,8 +58,24 @@
     }
 
     $: isCommitDisabled = !canCommit(current_playlist) && target_playlist === undefined;
+    $: commitDialogText = (() => {
+        console.log("running commitDialogText reactive statement")
+        if (isCommitDisabled) {
+            if (playlistNotOnwned(current_playlist)) {
+                return "Cannot commit changes, you are not the playlist owner!";
+            } else if (playlistTooLarge(current_playlist)) {
+                return "This playlist is too long (> 100 tracks) to commit to, choose a target instead!";
+            } else if (playlistCollaborative(current_playlist)) {
+                return "Cannot commit changes, this playlist is collaborative!";
+            }
+            return "Cannot commit changes!";
+        }
+        return "Are you sure you want to commit these changes?";
+    })()
 
     const valid_targets = data.playlists.filter(canCommit);
+
+    let showCommitModal: boolean = false;
 
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
@@ -73,32 +90,18 @@
 
     // Send URI array to back-end to be commited to Spotify
     async function commit() {
-        if (isCommitDisabled) {
-            if (playlistNotOnwned(current_playlist)) {
-                alert("Cannot commit changes, you are not the playlist owner!");
-            } else if (playlistTooLarge(current_playlist)) {
-                alert("This playlist is too long (> 100 tracks) to commit to, choose a target instead!");
-            } else if (playlistCollaborative(current_playlist)) {
-                alert("Cannot commit changes, this playlist is collaborative!");
-            }
-            return;
-        }
+        let playlist_order = data.tracks.map(e => e.track.uri);
 
-        const confirmed = confirm(`Commit these changes to ${target_playlist?.name ?? current_playlist.name}?`);
-        if (confirmed) {
-            let playlist_order = data.tracks.map(e => e.track.uri);
-
-            const response = await fetch("/api/commit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: target_playlist?.id ?? current_playlist.id,
-                    state: playlist_order.slice(0, 100),
-                }),
-            });
-            const reply = await response.json();
-            console.log(reply);
-        }
+        const response = await fetch("/api/commit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id: target_playlist?.id ?? current_playlist.id,
+                state: playlist_order.slice(0, 100),
+            }),
+        });
+        const reply = await response.json();
+        console.log(reply);
     }
 
     // Executes when drag & drop event ends
@@ -187,7 +190,19 @@
         {/if}
     </div>
 
-    <button style="margin-left: auto;" class:disabled-button={isCommitDisabled} on:click={commit}>Commit</button>
+    <button
+        style="margin-left: auto;"
+        class:disabled-button={isCommitDisabled}
+        on:click={() => showCommitModal = true}
+    >
+        Commit
+    </button>
+    <ConfirmModal
+        on:confirm={commit}
+        bind:showModal={showCommitModal}
+        question={commitDialogText}
+        confirmMessage="Changes committed succesfully"
+    /> <!-- TODO change confirm message with commit response -->
 
 </div>
 
