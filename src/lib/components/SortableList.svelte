@@ -8,9 +8,7 @@
 
     let list: HTMLElement;
     let options: Options;
-    let className: string;
 
-    export { className as class }
     export let animation = 0;
 
 
@@ -42,9 +40,6 @@
 </script>
 
 
-<div bind:this={list} class={className}>
+<div bind:this={list}>
     <slot/>
 </div>
-
-<style>
-</style>

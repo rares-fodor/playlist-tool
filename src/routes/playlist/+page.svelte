@@ -1,5 +1,4 @@
 <script lang="ts">
-    import TableRow from './TableRow.svelte';
     import Icon from '$lib/components/Icon.svelte';
 
     import type { PageData } from './$types';
@@ -7,44 +6,16 @@
 
 </script>
 
-<ul aria-label="Playlists">
+<ul aria-label="Playlists" class="p-0 list-none">
 {#each data.playlists as playlist}
-<li>
+<li class="hover:bg-gray-300">
     <a href={`/playlist/${playlist.id}`}>
-        <TableRow --col-count="1">
-            <div class="title">
-                <Icon size="medium" src={playlist.images[0].url}/>
-                <div class="playlist-name">
-                    <section>{playlist.name}</section>
-                </div>
-            </div>
-        </TableRow>
+        <div class="flex align-middle gap-3 py-1 border-b border-b-gray-400">
+            <Icon size="medium" src={playlist.images[0].url}/>
+            <div class="flex items-center"><span>{playlist.name}</span></div>
+        </div>
     </a>
 </li>
 {/each}
 </ul>
 
-
-<style>
-    ul {
-        padding: 0;
-        list-style: none;
-    }
-    li:hover {
-        background-color: var(--hover-bg-color);
-    }
-    a {
-        padding: 0;
-        background-color: var(--main-body-color);
-    }
-    .title {
-        display: flex;
-        gap: 10px;
-    }
-    .playlist-name {
-        display: flex;
-        align-items: center;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-</style>

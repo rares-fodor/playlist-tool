@@ -3,19 +3,7 @@
 </script>
 
 
-<div class="container">
-<p>{$page.status} | {$page.error?.message}</p>
+<div class="flex flex-col justify-center min-h-screen">
+<p class="text-center text-3xl">{$page.status} | {$page.error?.message}</p>
 </div>
 
-<style>
-    .container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        min-height: 100vh;
-    }
-    p {
-        text-align: center;
-        font: 30px Arial, sans-serif;
-    }
-</style>

@@ -6,12 +6,12 @@
 </script>
 
 
-<h1>Logged in as {data.user.username}</h1>
+<h1>Logged in as {data.user?.username}</h1>
 <form method="POST" use:enhance>
-    <button>Log out</button>
+    <button class="bg-gray-200 p-1 hover:bg-gray-300">Log out</button>
 </form>
 
 <br>
-<a href="/playlist">Playlist tool</a>
+<a href="/playlist" class="bg-gray-200 p-1 hover:bg-gray-300">Playlist tool</a>
 <br>
-<a href="/discover">Discover</a>
+<a href="/discover" class="bg-gray-200 p-1 hover:bg-gray-300">Discover</a>
