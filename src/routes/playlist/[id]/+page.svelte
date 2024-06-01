@@ -176,10 +176,18 @@
             <div
                 class="hidden group-hover:block absolute bg-gray-200 max-h-[600px] overflow-y-scroll overscroll-contain"
             >
-                <button class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis" on:click={() => onTargetRemoved()}>--- Remove selection ---</button>
+                <button
+                    class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+                    on:click={() => onTargetRemoved()}
+                >
+                    --- Remove selection ---
+                </button>
                 {#each valid_targets as playlist}
                     {#if playlist.id !== current_playlist.id }
-                        <button class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis" on:click={() => onTargetSelected(playlist)}>
+                        <button
+                            class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+                            on:click={() => onTargetSelected(playlist)}
+                        >
                             <Icon src={playlist.images[0].url} size="small" />
                             <span>{playlist.name}</span>
                         </button>
@@ -229,7 +237,7 @@
 <div class="grid grid-cols-2 border-b border-b-gray-700 py-1">
 {#each sortableColumns as column}
     <button on:click={() => onColumnClicked(column)}>
-        <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-11' : ''}`}> <!-- NOTE very hacky --->
+        <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-10' : ''}`}> <!-- NOTE very hacky --->
             <span>{column}</span>
             <div class="w-4 h-4">
                 {#if sortState.column === column}
