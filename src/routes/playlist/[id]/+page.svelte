@@ -253,7 +253,7 @@
 {/each}
 </div>
 
-<SortableList on:onEnd={onEndHandler} animation={150}>
+<SortableList on:onEnd={onEndHandler} ghostClass="bg-gray-300" animation={150}>
 <!-- Might be optimized -->
 {#key data.tracks}
 {#each data.tracks as pl_track}

@@ -14,7 +14,7 @@
 
 </script>
 
-<div class="grid grid-cols-2 border-b border-b-gray-400 py-1">
+<div class="grid grid-cols-2 border-b border-b-gray-400 py-1 hover:bg-gray-300">
     <div class="flex min-w-0 items-center max-h-9 gap-2">
         <Icon size="medium" src={imageUrl}/>
         <div class="flex flex-col justify-center whitespace-nowrap overflow-hidden">

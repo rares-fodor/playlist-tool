@@ -10,6 +10,7 @@
     let options: Options;
 
     export let animation = 0;
+    export let ghostClass = "";
 
 
     let dispatch = createEventDispatcher<{
@@ -32,6 +33,7 @@
             onEnd,
             onStart,
             animation,
+            ghostClass,
             // ... rest of the options
         }
         Sortable.create(list, {...options})
