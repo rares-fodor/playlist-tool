@@ -2,7 +2,7 @@
 </script>
 
 
-<div class="layout">
+<div class="grid ">
     <slot />
 </div>
 

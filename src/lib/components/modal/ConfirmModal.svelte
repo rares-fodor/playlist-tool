@@ -31,7 +31,7 @@
     </div>
     <svelte:fragment slot="footer">
     {#if !confirmed}
-        <button on:click={handleConfirm}>OK</button>
+        <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={handleConfirm}>OK</button>
     {/if}
     </svelte:fragment>
 </Modal>

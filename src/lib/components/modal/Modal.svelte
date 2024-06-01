@@ -19,41 +19,16 @@
     bind:this={dialog}
     on:close={() => (showModal = false)}
     on:click|self={() => dialog.close()}
+    class="max-w-[32em] border-none p-0"
 >
     <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <div on:click|stopPropagation>
+    <div on:click|stopPropagation class="p-4 flex flex-col gap-3">
         <slot name="header" />
         <slot name="body"/>
-        <div class="footer">
+        <div class="flex justify-between items-center">
             <slot name="footer"/>
-            <button on:click={() => dialog.close()}>Close</button>
+            <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={() => dialog.close()}>Close</button>
         </div>
     </div>
 </dialog>
-
-<style>
-    dialog {
-        max-width: 32em;
-        border-radius: 0.2em;
-        border: none;
-        padding: 0;
-    }
-    dialog::backdrop {
-        background: rgba(0, 0, 0, 0.3);
-    }
-    dialog > div {
-        padding: 1em;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    button {
-        display: block;
-    }
-</style>
 

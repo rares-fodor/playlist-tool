@@ -1,6 +1,5 @@
 <script lang="ts">
     import SortableList from '$lib/components/SortableList.svelte'
-    import TableRow from '../TableRow.svelte';
     import Track from './Track.svelte';
     import ConfirmModal from '$lib/components/modal/ConfirmModal.svelte';
     import Icon from '$lib/components/Icon.svelte';
@@ -59,7 +58,6 @@
 
     $: isCommitDisabled = !canCommit(current_playlist) && target_playlist === undefined;
     $: commitDialogText = (() => {
-        console.log("running commitDialogText reactive statement")
         if (isCommitDisabled) {
             if (playlistNotOnwned(current_playlist)) {
                 return "Cannot commit changes, you are not the playlist owner!";
@@ -158,26 +156,38 @@
 
 
 <!-- Title buttons -->
-<div style="display: grid; grid-template-columns: 1fr 1fr 1fr">
-    <div class="title-buttons">
-        <button on:click={() => {}}>Log order</button>
-        <button on:click={shuffleHandler}>Shuffle</button>
+<div class="grid grid-cols-3">
+    <div class="flex gap-2">
+        <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={() => {}}>Log order</button>
+        <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={shuffleHandler}>Shuffle</button>
     </div>
-    <div style="display: flex; justify-content: center; gap: 5px">
-        <div class="dropdown">
+    <div class="flex justify-center gap-2">
+        <!-- Dropdown handle -->
+        <div class="inline-block bg-gray-200 group">
             {#if target_playlist === undefined}
-                <button>Select target</button>
+                <button class="p-1">Select target</button>
             {:else}
-                <button class="dropdown-item">
+                <button class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis">
                     <Icon src={target_playlist.images[0].url} size="small" />
                     <span>{target_playlist.name}</span>
                 </button>
             {/if}
-            <div class="dropdown-content">
-                <button class="dropdown-item" on:click={() => onTargetRemoved()}>--- Remove selection ---</button>
+            <!-- Dropdown content --->
+            <div
+                class="hidden group-hover:block absolute bg-gray-200 max-h-[600px] overflow-y-scroll overscroll-contain"
+            >
+                <button
+                    class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+                    on:click={() => onTargetRemoved()}
+                >
+                    --- Remove selection ---
+                </button>
                 {#each valid_targets as playlist}
                     {#if playlist.id !== current_playlist.id }
-                        <button class="dropdown-item" on:click={() => onTargetSelected(playlist)}>
+                        <button
+                            class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+                            on:click={() => onTargetSelected(playlist)}
+                        >
                             <Icon src={playlist.images[0].url} size="small" />
                             <span>{playlist.name}</span>
                         </button>
@@ -186,13 +196,13 @@
             </div>
         </div>
         {#if target_playlist !== undefined}
-            <a data-sveltekit-reload href={`/playlist/${target_playlist.id}`}>Go to target</a>
+            <a data-sveltekit-reload href={`/playlist/${target_playlist.id}`} class="p-1 bg-gray-200 hover:bg-gray-300">Go to target</a>
         {/if}
     </div>
 
     <button
         style="margin-left: auto;"
-        class:disabled-button={isCommitDisabled}
+        class={`${isCommitDisabled ? 'opacity-50 cursor-not-allowed' : ''} p-1 bg-gray-200 hover:bg-gray-300`}
         on:click={() => showCommitModal = true}
     >
         Commit
@@ -206,21 +216,30 @@
 
 </div>
 
-<div class="playlist-greeter">
+<!-- Playlist greeter -->
+<div class="flex items-end py-8 gap-3">
     <Icon src={current_playlist.images[0].url} size="large" />
-    <div class="playlist-title">
-        <span class="playlist-title title">{current_playlist.name}</span>
-        <span class="playlist-title desc">{@html current_playlist.description}</span>
+    <div class="flex flex-col overflow-hidden grow max-h-24">
+        <span
+            class="inline-block grow overflow-hidden font-semibold text-3xl/tight"
+        >
+            {current_playlist.name}
+        </span>
+        <span
+            class="inline-block text-gray-800 overflow-hidden whitespace-nowrap overflow-ellipsis text-base/tight"
+        >
+            {@html current_playlist.description}
+        </span>
     </div>
 </div>
 
 <!-- Table header -->
-<TableRow --col-count="2">
+<div class="grid grid-cols-2 border-b border-b-gray-700 py-1">
 {#each sortableColumns as column}
-    <button class="text" on:click={() => onColumnClicked(column)}>
-        <div class={`table-header ${column}`}>
+    <button on:click={() => onColumnClicked(column)}>
+        <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-10' : ''}`}> <!-- NOTE very hacky --->
             <span>{column}</span>
-            <div class="svg-container">
+            <div class="w-4 h-4">
                 {#if sortState.column === column}
                     {#if sortState.direction === SortDirection.Ascending}
                         <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
@@ -232,10 +251,9 @@
         </div>
     </button>
 {/each}
-</TableRow>
+</div>
 
-
-<SortableList on:onEnd={onEndHandler} class="list" animation={150}>
+<SortableList on:onEnd={onEndHandler} ghostClass="bg-gray-300" animation={150}>
 <!-- Might be optimized -->
 {#key data.tracks}
 {#each data.tracks as pl_track}
@@ -243,99 +261,3 @@
 {/each}
 {/key}
 </SortableList>
-
-
-<style>
-    .title-buttons {
-        display: flex;
-        align-items: flex-start;
-        gap: 5px;
-    }
-    .table-header {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    .table-header.Title {
-        padding-left: calc(2em + 10px);
-    }
-    .svg-container {
-        width: 1em;
-        height: 1em;
-    }
-
-    .playlist-greeter {
-        display: flex;
-        align-items: flex-end;
-        gap: 10px;
-        padding-top: 30px;
-        padding-bottom: 30px;
-    }
-    .playlist-title {
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        max-height: 6em;
-        flex-grow: 1;
-        overflow: hidden;
-    }
-    .playlist-title.title {
-        display: inline-block;
-        flex-grow: 1;
-        font-weight: 600;
-        font-size: 2em;
-    }
-    .playlist-title.desc {
-        display: inline-block;
-        flex-shrink: 0;
-        color: var(--off-text-col);
-        min-height: 1em;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-    .playlist-title.desc:empty {
-        display: none;
-    }
-
-    .dropdown {
-        display: inline-block;
-        background-color: var(--accent-bg-color);
-    }
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        background-color: var(--accent-bg-color);
-        max-height: 600px;
-        overflow-y: scroll;
-        overscroll-behavior: contain;
-    }
-    .dropdown-item {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        max-width: 400px;
-        min-height: calc(1em + 5px);
-        width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .dropdown:hover .dropdown-content {
-        display: block;
-    }
-    .dropdown-item:hover {
-        background-color: var(--hover-bg-color);
-    }
-
-    .disabled-button {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-
-    @media (max-width: 450px) {
-        .playlist-title.title {
-            white-space: nowrap;
-            text-overflow: ellipsis;
-        }
-    }
-</style>
