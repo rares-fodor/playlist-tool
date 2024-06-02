@@ -75,6 +75,29 @@
 
     let showCommitModal: boolean = false;
 
+    class VisibleToggle {
+        visible: boolean;
+        id: string | undefined;
+
+        constructor() {
+            this.visible = false;
+            this.id = undefined;
+        }
+        isActive(id: string): boolean {
+            return this.visible && this.id === id;
+        }
+        toggle(id: string) {
+            if (this.id === id) {
+                this.visible = !this.visible;
+            } else {
+                this.id = id;
+                this.visible = true;
+            }
+        }
+    }
+
+    let optionsDropdownState = new VisibleToggle();
+
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
     function shuffleHandler() {
@@ -112,6 +135,8 @@
         const elem = data.tracks[old_idx];
         data.tracks.splice(old_idx, 1);
         data.tracks.splice(new_idx, 0, elem);
+
+        data.tracks = data.tracks; // Force reactivity
     }
 
     function onTargetSelected(playlist: Playlist) {
@@ -151,6 +176,10 @@
         }
     }
 
+    function onMoreOptionsClick(event: CustomEvent<{ trackId: string }>) {
+        optionsDropdownState.toggle(event.detail.trackId);
+        optionsDropdownState = optionsDropdownState; // Force reactivity
+    }
 
 </script>
 
@@ -234,7 +263,7 @@
 </div>
 
 <!-- Table header -->
-<div class="grid grid-cols-2 border-b border-b-gray-700 py-1">
+<div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-700 py-1">
 {#each sortableColumns as column}
     <button on:click={() => onColumnClicked(column)}>
         <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-10' : ''}`}> <!-- NOTE very hacky --->
@@ -253,11 +282,24 @@
 {/each}
 </div>
 
-<SortableList on:onEnd={onEndHandler} ghostClass="bg-gray-300" animation={150}>
-<!-- Might be optimized -->
-{#key data.tracks}
-{#each data.tracks as pl_track}
-    <Track track={pl_track.track}/>
-{/each}
-{/key}
+<SortableList
+    on:onEnd={onEndHandler}
+    on:onStart={() => optionsDropdownState.visible = false}
+    ghostClass="bg-gray-200" animation={150}
+>
+    <!-- Might be optimized -->
+    {#key data.tracks}
+    {#each data.tracks as pl_track}
+        <Track
+            on:moreOptions={onMoreOptionsClick}
+            track={pl_track.track}
+            class={`${optionsDropdownState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
+        />
+        {#if optionsDropdownState.isActive(pl_track.track.id)}
+            <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
+                <button class="hover:underline">Insert track below...</button>
+            </div>
+        {/if}
+    {/each}
+    {/key}
 </SortableList>
