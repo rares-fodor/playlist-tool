@@ -6,24 +6,27 @@
 
     import type { SortableEvent, Options } from 'sortablejs';
 
+    export let animation = 0
+    export let ghostClass = "";
+    export let filter = ".ignore-elements";
+    export { className as class };
+
     let list: HTMLElement;
     let options: Options;
-
-    export let animation = 0;
-    export let ghostClass = "";
+    let className: string = "";
 
 
     let dispatch = createEventDispatcher<{
-        onEnd: SortableEvent,
-        onStart: SortableEvent,
+        endDrag: SortableEvent,
+        startDrag: SortableEvent,
         // ... the other events (SortableList's events)
     }>();
 
     function onEnd(event: SortableEvent) {
-        dispatch('onEnd', event);
+        dispatch('endDrag', event);
     }
     function onStart(event: SortableEvent) {
-        dispatch('onStart', event);
+        dispatch('startDrag', event);
     }
     // ... the other events (sortablejs' events)
 
@@ -32,8 +35,9 @@
         options = {
             onEnd,
             onStart,
-            animation,
             ghostClass,
+            animation,
+            filter,
             // ... rest of the options
         }
         Sortable.create(list, {...options})
@@ -42,6 +46,6 @@
 </script>
 
 
-<div bind:this={list}>
+<div bind:this={list} class={className}>
     <slot/>
 </div>

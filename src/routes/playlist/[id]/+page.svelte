@@ -1,6 +1,5 @@
 <script lang="ts">
-    import SortableList from '$lib/components/SortableList.svelte'
-    import Track from './Track.svelte';
+    import TrackList from './TrackList.svelte';
     import ConfirmModal from '$lib/components/modal/ConfirmModal.svelte';
     import Icon from '$lib/components/Icon.svelte';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
@@ -75,28 +74,6 @@
 
     let showCommitModal: boolean = false;
 
-    class VisibleToggle {
-        visible: boolean;
-        id: string | undefined;
-
-        constructor() {
-            this.visible = false;
-            this.id = undefined;
-        }
-        isActive(id: string): boolean {
-            return this.visible && this.id === id;
-        }
-        toggle(id: string) {
-            if (this.id === id) {
-                this.visible = !this.visible;
-            } else {
-                this.id = id;
-                this.visible = true;
-            }
-        }
-    }
-
-    let optionsDropdownState = new VisibleToggle();
 
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
@@ -176,10 +153,6 @@
         }
     }
 
-    function onMoreOptionsClick(event: CustomEvent<{ trackId: string }>) {
-        optionsDropdownState.toggle(event.detail.trackId);
-        optionsDropdownState = optionsDropdownState; // Force reactivity
-    }
 
 </script>
 
@@ -282,24 +255,8 @@
 {/each}
 </div>
 
-<SortableList
-    on:onEnd={onEndHandler}
-    on:onStart={() => optionsDropdownState.visible = false}
-    ghostClass="bg-gray-200" animation={150}
->
-    <!-- Might be optimized -->
-    {#key data.tracks}
-    {#each data.tracks as pl_track}
-        <Track
-            on:moreOptions={onMoreOptionsClick}
-            track={pl_track.track}
-            class={`${optionsDropdownState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
-        />
-        {#if optionsDropdownState.isActive(pl_track.track.id)}
-            <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
-                <button class="hover:underline">Insert track below...</button>
-            </div>
-        {/if}
-    {/each}
-    {/key}
-</SortableList>
+<TrackList
+    tracks={data.tracks}
+    on:endDrag={onEndHandler}
+/>
+
