@@ -7,6 +7,7 @@
     import { createEventDispatcher } from "svelte";
 
     export let tracks: PlaylistedTrack[];
+    export let sortingEnabled: boolean;
 
     class IdentifiableToggle {
         value: boolean;
@@ -80,6 +81,7 @@
 </script>
 
 
+{#if sortingEnabled}
 <SortableList
     on:endDrag={endDrag}
     on:startDrag={startDragHandler}
@@ -102,3 +104,19 @@
         </div>
     {/each}
 </SortableList>
+{:else}
+{#each tracks as pl_track (pl_track.track.id)}
+    <div class="draggable">
+        <Track
+            on:moreOptions={onMoreOptionsClick}
+            track={pl_track.track}
+            class={`${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
+        />
+        {#if optionsDropdownState.isActive(pl_track.track.id)}
+            <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
+                <button class="hover:underline text-sm">Insert track below...</button>
+            </div>
+        {/if}
+    </div>
+{/each}
+{/if}
