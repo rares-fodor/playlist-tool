@@ -55,7 +55,7 @@
         //       That means it also counts the drop-down as a member of the list messing up the indexes a bit.
         const oldIndex = event.detail.oldIndex;
 
-        if (oldIndex !== undefined) {
+        if (oldIndex !== undefined && selectedTrackState.id !== undefined) {
             if (tracks[oldIndex] === undefined || tracks[oldIndex].track.id !== selectedTrackState.id) {
                 selectedTrackState.value = false;
             }
@@ -85,21 +85,20 @@
     on:startDrag={startDragHandler}
     animation={150}
     ghostClass={ghostClass}
-    filter=".non-draggable"
     draggable=".draggable"
 >
-    {#key tracks}
-    {#each tracks as pl_track}
-        <Track
-            on:moreOptions={onMoreOptionsClick}
-            track={pl_track.track}
-            class={`draggable ${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
-        />
-        {#if optionsDropdownState.isActive(pl_track.track.id)}
-            <div class="non-draggable flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
-                <button class="hover:underline text-sm">Insert track below...</button>
-            </div>
-        {/if}
+    {#each tracks as pl_track (pl_track.track.id)}
+        <div class="draggable">
+            <Track
+                on:moreOptions={onMoreOptionsClick}
+                track={pl_track.track}
+                class={`${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
+            />
+            {#if optionsDropdownState.isActive(pl_track.track.id)}
+                <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
+                    <button class="hover:underline text-sm">Insert track below...</button>
+                </div>
+            {/if}
+        </div>
     {/each}
-    {/key}
 </SortableList>
