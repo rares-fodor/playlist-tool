@@ -1,6 +1,9 @@
 <script lang="ts">
     import SortableList from "$lib/components/SortableList.svelte";
     import Track from "./Track.svelte";
+    import type { SortableEvent } from "sortablejs";
+
+    import { createEventDispatcher } from "svelte";
 
     export let tracks;
 
@@ -33,8 +36,6 @@
     let optionsDropdownState = new IdentifiableToggle();
     let selectedTrackState = new IdentifiableToggle();
 
-    $: console.log(selectedTrackState);
-
     function onMoreOptionsClick(event: CustomEvent<{ trackId: string }>) {
         selectedTrackState.toggle(event.detail.trackId);
         optionsDropdownState.toggle(event.detail.trackId);
@@ -47,27 +48,42 @@
         selectedTrackState.deactivate();
     }
 
+    const dispatch = createEventDispatcher<{
+        endDrag: {
+            oldIndex: number | undefined,
+            newIndex: number | undefined
+        }
+    }>();
+
+    // Minimal interface
+    function endDrag(event: CustomEvent<SortableEvent>) {
+        dispatch('endDrag', {
+            oldIndex: event.detail.oldDraggableIndex,
+            newIndex: event.detail.newDraggableIndex
+        });
+    }
 
 </script>
 
 
 <SortableList
-    on:endDrag
+    on:endDrag={endDrag}
     on:startDrag={startDragHandler}
     animation={150}
     ghostClass={ghostClass}
-    filter=".ignore-elements"
+    filter=".non-draggable"
+    draggable=".draggable"
 >
     {#key tracks}
     {#each tracks as pl_track}
         <Track
             on:moreOptions={onMoreOptionsClick}
             track={pl_track.track}
-            class={`${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
+            class={`draggable ${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
         />
         {#if optionsDropdownState.isActive(pl_track.track.id)}
-            <div class="ignore-elements flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
-                <button class="hover:underline">Insert track below...</button>
+            <div class="non-draggable flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
+                <button class="hover:underline text-sm">Insert track below...</button>
             </div>
         {/if}
     {/each}

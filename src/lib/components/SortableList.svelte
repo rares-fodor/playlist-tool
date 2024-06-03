@@ -9,6 +9,7 @@
     export let animation = 0
     export let ghostClass = "";
     export let filter = ".ignore-elements";
+    export let draggable = ".item";
     export { className as class };
 
     let list: HTMLElement;
@@ -38,6 +39,7 @@
             ghostClass,
             animation,
             filter,
+            draggable,
             // ... rest of the options
         }
         Sortable.create(list, {...options})

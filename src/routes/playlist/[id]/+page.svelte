@@ -103,12 +103,13 @@
     }
 
     // Executes when drag & drop event ends
-    function onEndHandler(event: CustomEvent<SortableEvent>) {
+    function onEndHandler(event: CustomEvent<{ oldIndex: number | undefined, newIndex: number | undefined }>) {
         let old_idx = event.detail.oldIndex;
         let new_idx = event.detail.newIndex;
         if (old_idx === undefined || new_idx === undefined) {
             return;
         }
+
         const elem = data.tracks[old_idx];
         data.tracks.splice(old_idx, 1);
         data.tracks.splice(new_idx, 0, elem);
