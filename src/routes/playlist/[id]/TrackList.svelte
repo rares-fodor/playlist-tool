@@ -2,10 +2,11 @@
     import SortableList from "$lib/components/SortableList.svelte";
     import Track from "./Track.svelte";
     import type { SortableEvent } from "sortablejs";
+    import type { PlaylistedTrack } from "$lib/api_types";
 
     import { createEventDispatcher } from "svelte";
 
-    export let tracks;
+    export let tracks: PlaylistedTrack[];
 
     class IdentifiableToggle {
         value: boolean;
@@ -43,9 +44,22 @@
         optionsDropdownState = optionsDropdownState; // Force reactivity
     }
 
-    async function startDragHandler() {
+    async function startDragHandler(event: CustomEvent<SortableEvent>) {
         optionsDropdownState.value = false;
         selectedTrackState.deactivate();
+
+        // Updating the state object for the selected will cause a redraw overwriting ghostClass
+        // if the element is also the one being dragged. When it is not, the state is only reflected when dragging stops.
+        // This allows toggled elements, not being dragged to be redrawn.
+        // NOTE: oldIndex is a bit of a hack here, SortableJS doesn't define oldDraggableIndex for the onStart event.
+        //       That means it also counts the drop-down as a member of the list messing up the indexes a bit.
+        const oldIndex = event.detail.oldIndex;
+
+        if (oldIndex !== undefined) {
+            if (tracks[oldIndex] === undefined || tracks[oldIndex].track.id !== selectedTrackState.id) {
+                selectedTrackState.value = false;
+            }
+        }
     }
 
     const dispatch = createEventDispatcher<{
