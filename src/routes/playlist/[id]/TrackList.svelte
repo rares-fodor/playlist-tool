@@ -119,6 +119,7 @@
     animation={150}
     ghostClass={ghostClass}
     draggable=".draggable"
+    forceFallback={true}
 >
     {#each tracks as pl_track (pl_track.track.id)}
         <div class="draggable hover:bg-gray-200">

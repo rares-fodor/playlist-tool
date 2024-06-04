@@ -10,6 +10,7 @@
     export let ghostClass = "";
     export let filter = ".ignore-elements";
     export let draggable = ".item";
+    export let forceFallback = false;
     export { className as class };
 
     let list: HTMLElement;
@@ -40,6 +41,7 @@
             animation,
             filter,
             draggable,
+            forceFallback,
             // ... rest of the options
         }
         Sortable.create(list, {...options})
