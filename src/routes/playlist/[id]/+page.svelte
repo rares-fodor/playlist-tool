@@ -179,7 +179,7 @@
             {/if}
             <!-- Dropdown content --->
             <div
-                class="hidden group-hover:block absolute bg-gray-200 max-h-[600px] overflow-y-scroll overscroll-contain"
+                class="hidden group-hover:block absolute bg-gray-200 max-h-[600px] overflow-y-scroll overscroll-contain z-20"
             >
                 <button
                     class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
