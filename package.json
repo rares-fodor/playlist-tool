@@ -39,6 +39,7 @@
 		"better-sqlite3": "^9.6.0",
 		"buffer": "^6.0.3",
 		"lucia": "^3.2.0",
-		"sortablejs": "^1.15.2"
+		"sortablejs": "^1.15.2",
+		"svelte-tiny-virtual-list": "^2.1.2"
 	}
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
     import SortableList from "$lib/components/SortableList.svelte";
     import Track from "./Track.svelte";
+    import VirtualList from 'svelte-tiny-virtual-list';
     import type { SortableEvent } from "sortablejs";
     import type { PlaylistedTrack } from "$lib/api_types";
 
@@ -35,6 +36,9 @@
 
     let ghostClass = "bg-gray-200";
 
+    const trackHeight = 45;
+    let fixedTrackHeights = Array(tracks.length).fill(trackHeight);
+
     let optionsDropdownState = new IdentifiableToggle();
     let selectedTrackState = new IdentifiableToggle();
 
@@ -43,6 +47,13 @@
         optionsDropdownState.toggle(event.detail.trackId);
         selectedTrackState = selectedTrackState;
         optionsDropdownState = optionsDropdownState; // Force reactivity
+
+        const trackIndex = tracks.findIndex(track => track.track.id === event.detail.trackId);
+
+        fixedTrackHeights = Array(tracks.length).fill(trackHeight)
+        if (optionsDropdownState.value) {
+            fixedTrackHeights[trackIndex] = 80;
+        }
     }
 
     async function startDragHandler(event: CustomEvent<SortableEvent>) {
@@ -105,18 +116,21 @@
     {/each}
 </SortableList>
 {:else}
-{#each tracks as pl_track (pl_track.track.id)}
-    <div class="draggable">
+{#key tracks}
+<VirtualList height={750} itemCount={tracks.length} itemSize={fixedTrackHeights}>
+    <div slot="item" let:index let:style {style}>
         <Track
             on:moreOptions={onMoreOptionsClick}
-            track={pl_track.track}
-            class={`${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
+            track={tracks[index].track}
+            class={`${selectedTrackState.isActive(tracks[index].track.id) ? 'bg-gray-200' : ''}`}
         />
-        {#if optionsDropdownState.isActive(pl_track.track.id)}
+        {#if optionsDropdownState.isActive(tracks[index].track.id)}
             <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
                 <button class="hover:underline text-sm">Insert track below...</button>
             </div>
         {/if}
     </div>
-{/each}
+</VirtualList>
+{/key}
 {/if}
+
