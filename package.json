@@ -33,13 +33,13 @@
 	"type": "module",
 	"dependencies": {
 		"@lucia-auth/adapter-sqlite": "^3.0.1",
+		"@tanstack/svelte-virtual": "^3.5.0",
 		"@types/better-sqlite3": "^7.6.10",
 		"@types/sortablejs": "^1.15.8",
 		"arctic": "^1.8.0",
 		"better-sqlite3": "^9.6.0",
 		"buffer": "^6.0.3",
 		"lucia": "^3.2.0",
-		"sortablejs": "^1.15.2",
-		"svelte-tiny-virtual-list": "^2.1.2"
+		"sortablejs": "^1.15.2"
 	}
 }
