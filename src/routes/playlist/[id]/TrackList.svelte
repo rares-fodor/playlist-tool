@@ -1,6 +1,7 @@
 <script lang="ts">
     import SortableList from "$lib/components/SortableList.svelte";
     import Track from "./Track.svelte";
+    import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
     import type { SortableEvent } from "sortablejs";
     import type { PlaylistedTrack } from "$lib/api_types";
 
@@ -79,13 +80,15 @@
         });
     }
 
-    let virtualListElem: HTMLDivElement;
     let virtualItemElems: HTMLDivElement[] = [];
+    let osRef: OverlayScrollbarsComponent | undefined;
+
     $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
         count: tracks.length,
-        getScrollElement: () => virtualListElem,
+        // @ts-ignore: Assign HTMLElement | undefined to HTMLDivElement | null
+        getScrollElement: () => osRef?.osInstance()?.elements().viewport,
         estimateSize: () => 70,
-        overscan: 5,
+        overscan: 10
     })
 
     $: virtualItems = $virtualizer.getVirtualItems();
@@ -95,8 +98,8 @@
         }
     }
 
-</script>
 
+</script>
 
 {#if sortingEnabled}
 <SortableList
@@ -124,29 +127,51 @@
 
 {:else}
 
+<OverlayScrollbarsComponent
+    bind:this={osRef}
+    options={{
+        scrollbars: {
+            theme: 'os-theme-dark',
+            autoHide: 'leave'
+        }
+    }}
+    class="overflow-auto"
+>
 {#key tracks}
-<div bind:this={virtualListElem} class="h-[750px] w-full overflow-auto">
-<div style="position: relative; height: {$virtualizer.getTotalSize()}px; width: 100%;">
-    <div
-        style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItems[0] ? virtualItems[0].start : 0}px);"
-    >
-        {#each virtualItems as row, index (row.index)}
-            <div bind:this={virtualItemElems[index]} data-index={row.index} >
-                <Track
-                    on:moreOptions={onMoreOptionsClick}
-                    track={tracks[row.index].track}
-                    class={`${selectedTrackState.isActive(tracks[row.index].track.id) ? 'bg-gray-200' : ''}`}
-                />
-                {#if optionsDropdownState.isActive(tracks[row.index].track.id)}
-                    <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
-                        <button class="hover:underline text-sm">Insert track below...</button>
-                    </div>
-                {/if}
-            </div>
-        {/each}
+<div class="h-[750px] w-full">
+    <div style="position: relative; height: {$virtualizer.getTotalSize()}px; width: 100%;">
+        <div
+            style="position: absolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItems[0] ? virtualItems[0].start : 0}px);"
+        >
+            {#each virtualItems as row, index (row.index)}
+                <div
+                    bind:this={virtualItemElems[index]}
+                    data-index={row.index}
+                >
+                    <Track
+                        on:moreOptions={onMoreOptionsClick}
+                        track={tracks[row.index].track}
+                        class={`${selectedTrackState.isActive(tracks[row.index].track.id) ? 'bg-gray-200' : ''}`}
+                    />
+                    {#if optionsDropdownState.isActive(tracks[row.index].track.id)}
+                        <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
+                            <button class="hover:underline text-sm">Insert track below...</button>
+                        </div>
+                    {/if}
+                </div>
+            {/each}
+        </div>
     </div>
 </div>
-</div>
 {/key}
+</OverlayScrollbarsComponent>
 {/if}
 
+<style>
+    :global(.os-theme-dark) {
+        --os-size: 15px;
+        --os-handle-border-radius: 0px;
+    }
+
+
+</style>
