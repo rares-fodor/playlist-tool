@@ -7,8 +7,3 @@
         @apply text-2xl;
     }
 }
-
-.os-theme-custom {
-    --os-size: 10px;
-    --os-handle-max-size: 40px;
-}

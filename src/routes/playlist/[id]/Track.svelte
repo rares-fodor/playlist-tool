@@ -30,7 +30,7 @@
 </script>
 
 <button class={`${className} w-full text-left`} on:click={moreOptions}>
-<div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-400 py-1 hover:bg-gray-200 group">
+<div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-400 py-1 group">
     <div class="flex min-w-0 items-center max-h-9 gap-2">
         <Icon size="medium" src={imageUrl}/>
         <div class="flex flex-col justify-center whitespace-nowrap overflow-hidden">

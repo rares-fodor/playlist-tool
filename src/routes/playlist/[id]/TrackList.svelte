@@ -81,6 +81,7 @@
     }
 
     let virtualItemElems: HTMLDivElement[] = [];
+    let sortableOsRef: OverlayScrollbarsComponent | undefined;
     let osRef: OverlayScrollbarsComponent | undefined;
 
     $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
@@ -99,18 +100,28 @@
     }
 
 
-</script>
 
+</script>
 {#if sortingEnabled}
+<OverlayScrollbarsComponent
+    bind:this={sortableOsRef}
+    options={{
+        scrollbars: {
+            theme: 'os-theme-dark',
+            autoHide: 'leave'
+        }
+    }}
+    class="overflow-auto h-[750px]"
+>
 <SortableList
-    on:endDrag={endDrag}
     on:startDrag={startDragHandler}
+    on:endDrag={endDrag}
     animation={150}
     ghostClass={ghostClass}
     draggable=".draggable"
 >
     {#each tracks as pl_track (pl_track.track.id)}
-        <div class="draggable">
+        <div class="draggable hover:bg-gray-200">
             <Track
                 on:moreOptions={onMoreOptionsClick}
                 track={pl_track.track}
@@ -124,6 +135,7 @@
         </div>
     {/each}
 </SortableList>
+</OverlayScrollbarsComponent>
 
 {:else}
 
@@ -172,6 +184,4 @@
         --os-size: 15px;
         --os-handle-border-radius: 0px;
     }
-
-
 </style>
