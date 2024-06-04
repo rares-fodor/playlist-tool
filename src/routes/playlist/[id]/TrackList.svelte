@@ -41,16 +41,23 @@
     let selectedTrackState = new IdentifiableToggle();
 
     function onMoreOptionsClick(event: CustomEvent<{ trackId: string }>) {
+        if (dragging) {
+            return;
+        }
         selectedTrackState.toggle(event.detail.trackId);
         optionsDropdownState.toggle(event.detail.trackId);
         selectedTrackState = selectedTrackState;
         optionsDropdownState = optionsDropdownState; // Force reactivity
     }
 
+    let sortableList: HTMLElement;
+    let dragging: boolean = false;
+
     async function startDragHandler(event: CustomEvent<SortableEvent>) {
         optionsDropdownState.value = false;
         selectedTrackState.deactivate();
 
+        dragging = true;
         // Updating the state object for the selected will cause a redraw overwriting ghostClass
         // if the element is also the one being dragged. When it is not, the state is only reflected when dragging stops.
         // This allows toggled elements, not being dragged to be redrawn.
@@ -78,6 +85,10 @@
             oldIndex: event.detail.oldDraggableIndex,
             newIndex: event.detail.newDraggableIndex
         });
+
+        // Releasing a dragged item counts as a click event when forceFallback is true for sortableList
+        // This prevents the dropdown from being enabled after an element is dragged.
+        setTimeout(() => dragging = false, 1);
     }
 
     let virtualItemElems: HTMLDivElement[] = [];
@@ -114,12 +125,15 @@
     class="overflow-auto h-[750px]"
 >
 <SortableList
+    bind:list={sortableList}
     on:startDrag={startDragHandler}
     on:endDrag={endDrag}
     animation={150}
     ghostClass={ghostClass}
     draggable=".draggable"
     forceFallback={true}
+    fallbackClass="hidden"
+    fallbackTolerance={5}
 >
     {#each tracks as pl_track (pl_track.track.id)}
         <div class="draggable hover:bg-gray-200">

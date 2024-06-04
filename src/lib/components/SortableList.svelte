@@ -11,9 +11,11 @@
     export let filter = ".ignore-elements";
     export let draggable = ".item";
     export let forceFallback = false;
+    export let fallbackClass = "";
+    export let fallbackTolerance = 0;
     export { className as class };
 
-    let list: HTMLElement;
+    export let list: HTMLElement;
     let options: Options;
     let className: string = "";
 
@@ -42,6 +44,8 @@
             filter,
             draggable,
             forceFallback,
+            fallbackClass,
+            fallbackTolerance,
             // ... rest of the options
         }
         Sortable.create(list, {...options})
