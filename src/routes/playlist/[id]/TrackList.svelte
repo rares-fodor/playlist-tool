@@ -3,9 +3,8 @@
     import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
     import type { PlaylistedTrack } from "$lib/api_types";
 
-    import { createEventDispatcher, onMount } from "svelte";
+    import { createEventDispatcher } from "svelte";
     import { createVirtualizer } from "@tanstack/svelte-virtual";
-    import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 
     export let tracks: PlaylistedTrack[];
     export let sortingEnabled: boolean;
@@ -65,21 +64,8 @@
             virtualItemElems.forEach((elem) => $virtualizer.measureElement(elem));
         }
     }
-
-    let draggables: HTMLElement;
-
-    onMount(() => {
-        if (!draggables) {
-            console.error("Draggable not set");
-            return;
-        }
-        return draggable({
-            element: draggables
-        });
-    })
-
-
 </script>
+
 {#if sortingEnabled}
 <OverlayScrollbarsComponent
     bind:this={osRef}
@@ -91,8 +77,8 @@
     }}
     class="overflow-auto h-[750px]"
 >
-{#each tracks.slice(0) as pl_track (pl_track.track.id)}
-    <div class="draggable" bind:this={draggables}>
+{#each tracks as pl_track (pl_track.track.id)}
+    <div class="draggable">
         <Track
             on:moreOptions={onMoreOptionsClick}
             track={pl_track.track}

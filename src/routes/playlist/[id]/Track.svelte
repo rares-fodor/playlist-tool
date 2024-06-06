@@ -1,16 +1,31 @@
 <script lang="ts">
     import Icon from "$lib/components/Icon.svelte";
 
-    import { createEventDispatcher } from "svelte";
+    import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+    import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+    import { onMount, createEventDispatcher } from "svelte";
 
     import type { TrackItem } from '$lib/api_types'
-
 
     export { className as class };
     export let track: TrackItem;
 
     let className: string;
+    let element: HTMLElement;
 
+    let state: string;
+
+    onMount(() => {
+        return combine(
+            draggable({ element }),
+            dropTargetForElements({
+                element,
+                onDragEnter: () => state = 'over',
+                onDragLeave: () => state = 'idle',
+                onDrop: () => state = 'idle'
+            })
+        )
+    })
 
     const dispatch = createEventDispatcher<{
         moreOptions: { trackId: string }
@@ -29,7 +44,7 @@
 
 </script>
 
-<button class={`${className} w-full text-left`} on:click={moreOptions}>
+<button class={`${className} w-full text-left ${state === 'over' ? 'bg-slate-300' : ''}`} on:click={moreOptions} bind:this={element}>
 <div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-400 py-1 group">
     <div class="flex min-w-0 items-center max-h-9 gap-2">
         <Icon size="medium" src={imageUrl}/>
