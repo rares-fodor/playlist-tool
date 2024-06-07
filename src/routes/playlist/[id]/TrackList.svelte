@@ -77,10 +77,11 @@
     }}
     class="overflow-auto h-[750px]"
 >
-{#each tracks as pl_track (pl_track.track.id)}
+{#each tracks as pl_track, index (pl_track.track.id)}
     <div class="draggable">
         <Track
             on:moreOptions={onMoreOptionsClick}
+            index={index}
             track={pl_track.track}
             class={`${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
         />

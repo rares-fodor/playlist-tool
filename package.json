@@ -33,6 +33,7 @@
 	"type": "module",
 	"dependencies": {
 		"@atlaskit/pragmatic-drag-and-drop": "^1.1.11",
+		"@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
 		"@lucia-auth/adapter-sqlite": "^3.0.1",
 		"@tanstack/svelte-virtual": "^3.5.0",
 		"@types/better-sqlite3": "^7.6.10",

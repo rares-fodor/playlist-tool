@@ -2,6 +2,7 @@
     import Icon from "$lib/components/Icon.svelte";
 
     import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+    import { attachClosestEdge, extractClosestEdge, type Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
     import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
     import { onMount, createEventDispatcher } from "svelte";
 
@@ -9,20 +10,47 @@
 
     export { className as class };
     export let track: TrackItem;
+    export let index: number;
 
     let className: string;
     let element: HTMLElement;
 
     let state: string;
+    let closestEdge: Edge | null;
 
     onMount(() => {
         return combine(
-            draggable({ element }),
+            draggable({
+                element,
+                getInitialData: () => { return { index: index } },
+                onDragStart: () => state = 'dragging',
+                onDrop: () => state = 'idle',
+            }),
             dropTargetForElements({
                 element,
-                onDragEnter: () => state = 'over',
-                onDragLeave: () => state = 'idle',
-                onDrop: () => state = 'idle'
+                getData({ input }) {
+                    return attachClosestEdge({ index }, {
+                        element,
+                        input,
+                        allowedEdges: ['top', 'bottom']
+                    });
+                },
+                onDragEnter: () => { state = 'over' },
+                onDragLeave: () => {
+                    state = 'idle';
+                    closestEdge = null;
+                },
+                onDrop: () => {
+                    state = 'idle';
+                    closestEdge = null;
+                },
+                onDrag: ({ self, source }) => {
+                    if (source.element === element) {
+                        return;
+                    }
+                    console.log(source.data.index);
+                    closestEdge = extractClosestEdge(self.data);
+                },
             })
         )
     })
