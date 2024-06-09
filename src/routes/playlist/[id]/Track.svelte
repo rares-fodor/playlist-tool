@@ -2,11 +2,18 @@
     import Icon from "$lib/components/Icon.svelte";
 
     import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-    import { attachClosestEdge, extractClosestEdge, type Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
+    import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
     import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
     import { onMount, createEventDispatcher } from "svelte";
 
     import type { TrackItem } from '$lib/api_types'
+
+    type DragState = 'idle' | 'is-dragging-over' | 'is-dragging' | 'preview';
+
+    const stateStyles: { [Key in DragState]?: string } = {
+        'is-dragging': 'opacity-40',
+        'is-dragging-over': 'bg-slate-300'
+    }
 
     export { className as class };
     export let track: TrackItem;
@@ -15,15 +22,20 @@
     let className: string;
     let element: HTMLElement;
 
-    let state: string;
-    let closestEdge: Edge | null;
+    let state: DragState = 'idle';
+
+    let trackData: {
+        index: number,
+    } = {
+        index: index
+    }
 
     onMount(() => {
         return combine(
             draggable({
                 element,
-                getInitialData: () => { return { index: index } },
-                onDragStart: () => state = 'dragging',
+                getInitialData: () => { return trackData },
+                onDragStart: () => state = 'is-dragging',
                 onDrop: () => state = 'idle',
             }),
             dropTargetForElements({
@@ -35,21 +47,24 @@
                         allowedEdges: ['top', 'bottom']
                     });
                 },
-                onDragEnter: () => { state = 'over' },
+                onDragEnter: () => {
+                    if (state !== 'is-dragging') {
+                        state = 'is-dragging-over'
+                    }
+                },
                 onDragLeave: () => {
-                    state = 'idle';
-                    closestEdge = null;
+                    if (state !== 'is-dragging') {
+                        state = 'idle'
+                    }
                 },
                 onDrop: () => {
                     state = 'idle';
-                    closestEdge = null;
                 },
                 onDrag: ({ self, source }) => {
                     if (source.element === element) {
                         return;
                     }
                     console.log(source.data.index);
-                    closestEdge = extractClosestEdge(self.data);
                 },
             })
         )
@@ -72,7 +87,7 @@
 
 </script>
 
-<button class={`${className} w-full text-left ${state === 'over' ? 'bg-slate-300' : ''}`} on:click={moreOptions} bind:this={element}>
+<button class={`${className} w-full text-left ${stateStyles[state] ?? ''}`} on:click={moreOptions} bind:this={element}>
 <div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-400 py-1 group">
     <div class="flex min-w-0 items-center max-h-9 gap-2">
         <Icon size="medium" src={imageUrl}/>
