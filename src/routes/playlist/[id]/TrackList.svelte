@@ -3,11 +3,13 @@
     import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
     import type { PlaylistedTrack } from "$lib/api_types";
 
-    import { createEventDispatcher } from "svelte";
+    import { onMount } from "svelte";
+    import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter"
     import { createVirtualizer } from "@tanstack/svelte-virtual";
-
-    export let tracks: PlaylistedTrack[];
-    export let sortingEnabled: boolean;
+    import { isTrackData } from "./track-data";
+    import { reorderWithEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge"
+    import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/"
+    import type { EventListenerArgs } from "overlayscrollbars"
 
     class IdentifiableToggle {
         value: boolean;
@@ -33,6 +35,9 @@
         }
     }
 
+    export let tracks: PlaylistedTrack[];
+    export let sortingEnabled: boolean;
+
     let optionsDropdownState = new IdentifiableToggle();
     let selectedTrackState = new IdentifiableToggle();
 
@@ -43,12 +48,10 @@
         optionsDropdownState = optionsDropdownState; // Force reactivity
     }
 
-    const dispatch = createEventDispatcher<{
-        endDrag: {}
-    }>();
-
     let virtualItemElems: HTMLDivElement[] = [];
     let osRef: OverlayScrollbarsComponent | undefined;
+
+    $: scrollViewport = osRef?.osInstance()?.elements().viewport
 
     $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
         count: tracks.length,
@@ -64,6 +67,60 @@
             virtualItemElems.forEach((elem) => $virtualizer.measureElement(elem));
         }
     }
+
+    let scrollTop: number | undefined = 0;
+    let scrollLeft: number | undefined = 0;
+    let moved: boolean = false;
+
+    onMount(() => {
+        return monitorForElements({
+            canMonitor({ source }) {
+                console.log(isTrackData);
+                return isTrackData(source.data);
+            },
+            onDrop({ location, source }) {
+                const target = location.current.dropTargets[0];
+                if (!target) {
+                    return;
+                }
+                const sourceData = source.data;
+                const targetData = target.data;
+
+                if (!isTrackData(sourceData) || !isTrackData(targetData)) {
+                    return;
+                }
+
+                const sourceIndex = sourceData.trackIndex;
+                const targetIndex = targetData.trackIndex;
+                console.log(sourceIndex, targetIndex);
+
+                const closestEdge = sourceIndex > targetIndex ? 'top' as Edge : 'bottom' as Edge;
+
+                tracks = reorderWithEdge({
+                    list: tracks,
+                    startIndex: sourceIndex,
+                    indexOfTarget: targetIndex,
+                    closestEdgeOfTarget: closestEdge,
+                    axis: 'vertical',
+                })
+
+                scrollTop = scrollViewport?.scrollTop
+                scrollLeft = scrollViewport?.scrollLeft
+                moved = true;
+            },
+        })
+    })
+
+    // Moved is toggled in onDrop
+    // Changing the track list causes a redraw of the overlayscrollbar div, causeing it to reset the scroll amount.
+    // Saving this restores the saved scroll state
+    function onScroll() {
+        if (moved && scrollViewport) {
+            scrollViewport.scrollTop = scrollTop ?? 0;
+            moved = false;
+        }
+    }
+
 </script>
 
 {#if sortingEnabled}
@@ -73,15 +130,17 @@
         scrollbars: {
             theme: 'os-theme-dark',
             autoHide: 'leave'
-        }
+        },
     }}
+    on:osScroll={onScroll}
+    on:osUpdated={() => console.log("updated")}
     class="overflow-auto h-[750px]"
 >
-{#each tracks as pl_track, index (pl_track.track.id)}
+{#each tracks as pl_track, index (`${pl_track.track.id}:${index}`)}
     <div class="draggable">
         <Track
-            on:moreOptions={onMoreOptionsClick}
             index={index}
+            on:moreOptions={onMoreOptionsClick}
             track={pl_track.track}
             class={`${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
         />

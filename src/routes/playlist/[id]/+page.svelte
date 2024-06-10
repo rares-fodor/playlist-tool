@@ -274,6 +274,5 @@
 <TrackList
     tracks={data.tracks}
     sortingEnabled={sortingEnabled}
-    on:endDrag={onEndHandler}
 />
 

@@ -2,9 +2,9 @@
     import Icon from "$lib/components/Icon.svelte";
 
     import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-    import { attachClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
     import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
     import { onMount, createEventDispatcher } from "svelte";
+    import { getTrackData, isTrackData } from './track-data';
 
     import type { TrackItem } from '$lib/api_types'
 
@@ -24,28 +24,26 @@
 
     let state: DragState = 'idle';
 
-    let trackData: {
-        index: number,
-    } = {
-        index: index
-    }
-
     onMount(() => {
         return combine(
             draggable({
                 element,
-                getInitialData: () => { return trackData },
+                getInitialData: () => {
+                    return getTrackData(index);
+                },
                 onDragStart: () => state = 'is-dragging',
                 onDrop: () => state = 'idle',
             }),
             dropTargetForElements({
                 element,
-                getData({ input }) {
-                    return attachClosestEdge({ index }, {
-                        element,
-                        input,
-                        allowedEdges: ['top', 'bottom']
-                    });
+                canDrop({ source }) {
+                    if (source.element === element) {
+                        return false;
+                    }
+                    return isTrackData(source.data);
+                },
+                getData: () => {
+                    return getTrackData(index);
                 },
                 onDragEnter: () => {
                     if (state !== 'is-dragging') {
@@ -59,12 +57,6 @@
                 },
                 onDrop: () => {
                     state = 'idle';
-                },
-                onDrag: ({ self, source }) => {
-                    if (source.element === element) {
-                        return;
-                    }
-                    console.log(source.data.index);
                 },
             })
         )
