@@ -77,6 +77,17 @@
                     console.log(isTrackData);
                     return isTrackData(source.data);
                 },
+                onDrag() {
+                    // When drag starts we should collapse open drop-downs and unselect their parent tracks
+                    if (optionsDropdownState.value) {
+                        optionsDropdownState.deactivate();
+                        optionsDropdownState = optionsDropdownState;
+                    }
+                    if (selectedTrackState.value) {
+                        selectedTrackState.deactivate();
+                        selectedTrackState = selectedTrackState;
+                    }
+                },
                 onDrop({ location, source }) {
                     const target = location.current.dropTargets[0];
                     if (!target) {

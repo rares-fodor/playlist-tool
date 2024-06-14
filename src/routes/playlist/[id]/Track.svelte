@@ -12,7 +12,7 @@
 
     const stateStyles: { [Key in DragState]?: string } = {
         'is-dragging': 'opacity-40',
-        'is-dragging-over': 'bg-slate-300'
+        'is-dragging-over': 'bg-gray-200'
     }
 
     export { className as class };
