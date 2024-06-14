@@ -10,6 +10,7 @@
     import { reorderWithEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge";
     import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
     import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+    import { triggerPostMoveFlash } from "@atlaskit/pragmatic-drag-and-drop-flourish/trigger-post-move-flash"
     import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/";
 
     class IdentifiableToggle {
@@ -103,6 +104,13 @@
                     })
 
                     virtualItems = $virtualizer.getVirtualItems();
+
+                    setTimeout(() => {
+                        const element = document.querySelector(`[data-track-index="${targetData.trackIndex}"]`)
+                        if (element instanceof HTMLElement) {
+                            triggerPostMoveFlash(element);
+                        }
+                    }, 50)
                 }
             }),
             autoScrollForElements({
@@ -129,17 +137,19 @@
         style="position: abosolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItems[0] ? virtualItems[0].start : 0}px);"
     >
         {#each virtualItems as virtItem (`${tracks[virtItem.index].track.id}:${virtItem.index}`)}
-            <Track
-                index={virtItem.index}
-                on:moreOptions={onMoreOptionsClick}
-                track={tracks[virtItem.index].track}
-                class={`${selectedTrackState.isActive(tracks[virtItem.index].track.id) ? 'bg-gray-200' : ''}`}
-            />
-            {#if optionsDropdownState.isActive(tracks[virtItem.index].track.id)}
-                <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
-                    <button class="hover:underline text-sm">Insert track below...</button>
-                </div>
-            {/if}
+            <div data-track-index={virtItem.index}>
+                <Track
+                    index={virtItem.index}
+                    on:moreOptions={onMoreOptionsClick}
+                    track={tracks[virtItem.index].track}
+                    class={`${selectedTrackState.isActive(tracks[virtItem.index].track.id) ? 'bg-gray-200' : ''}`}
+                />
+                {#if optionsDropdownState.isActive(tracks[virtItem.index].track.id)}
+                    <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
+                        <button class="hover:underline text-sm">Insert track below...</button>
+                    </div>
+                {/if}
+            </div>
         {/each}
     </div>
 </div>
