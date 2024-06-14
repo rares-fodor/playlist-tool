@@ -157,8 +157,7 @@
         }
     }
 
-    let sortingEnabled: boolean = true;
-    $: sortToggleClass = `${sortingEnabled ? 'bg-green-200 hover:bg-green-300' : 'bg-red-200 hover:bg-red-300'}`
+    $: console.log(data.tracks)
 
     let dragTitle: HTMLElement;
 
@@ -176,7 +175,6 @@
     <div class="flex gap-2">
         <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={() => {}}>Log order</button>
         <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={shuffleHandler}>Shuffle</button>
-        <button class={`p-1 ${sortToggleClass}`} on:click={() => sortingEnabled = !sortingEnabled}>{sortingEnabled ? 'Sortable' : 'Fixed'}</button>
     </div>
     <div class="flex justify-center gap-2">
         <!-- Dropdown handle -->
@@ -273,6 +271,5 @@
 
 <TrackList
     tracks={data.tracks}
-    sortingEnabled={sortingEnabled}
 />
 

@@ -9,7 +9,6 @@
     import { isTrackData } from "./track-data";
     import { reorderWithEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge"
     import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/"
-    import type { EventListenerArgs } from "overlayscrollbars"
 
     class IdentifiableToggle {
         value: boolean;
@@ -36,7 +35,6 @@
     }
 
     export let tracks: PlaylistedTrack[];
-    export let sortingEnabled: boolean;
 
     let optionsDropdownState = new IdentifiableToggle();
     let selectedTrackState = new IdentifiableToggle();
@@ -50,16 +48,20 @@
 
     let virtualItemElems: HTMLDivElement[] = [];
     let osRef: OverlayScrollbarsComponent | undefined;
-
     $: scrollViewport = osRef?.osInstance()?.elements().viewport
 
+    // Prevents reinitialization of virtualizer when tracks changes
+    let count: number = tracks.length;
+
     $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
-        count: tracks.length,
+        count,
         // @ts-ignore: Assign HTMLElement | undefined to HTMLDivElement | null
         getScrollElement: () => osRef?.osInstance()?.elements().viewport,
-        estimateSize: () => 70,
-        overscan: 10
+        estimateSize: () => 44,
+        overscan: 5
     })
+
+    $: console.log(scrollViewport)
 
     $: virtualItems = $virtualizer.getVirtualItems();
     $: {
@@ -104,26 +106,12 @@
                     axis: 'vertical',
                 })
 
-                scrollTop = scrollViewport?.scrollTop
-                scrollLeft = scrollViewport?.scrollLeft
-                moved = true;
+                virtualItems = $virtualizer.getVirtualItems();
             },
         })
     })
 
-    // Moved is toggled in onDrop
-    // Changing the track list causes a redraw of the overlayscrollbar div, causeing it to reset the scroll amount.
-    // Saving this restores the saved scroll state
-    function onScroll() {
-        if (moved && scrollViewport) {
-            scrollViewport.scrollTop = scrollTop ?? 0;
-            moved = false;
-        }
-    }
-
 </script>
-
-{#if sortingEnabled}
 <OverlayScrollbarsComponent
     bind:this={osRef}
     options={{
@@ -132,27 +120,30 @@
             autoHide: 'leave'
         },
     }}
-    on:osScroll={onScroll}
-    on:osUpdated={() => console.log("updated")}
-    class="overflow-auto h-[750px]"
+    class="overflow-y-auto h-[750px] contain-strict"
 >
-{#each tracks as pl_track, index (`${pl_track.track.id}:${index}`)}
-    <div class="draggable">
-        <Track
-            index={index}
-            on:moreOptions={onMoreOptionsClick}
-            track={pl_track.track}
-            class={`${selectedTrackState.isActive(pl_track.track.id) ? 'bg-gray-200' : ''}`}
-        />
-        {#if optionsDropdownState.isActive(pl_track.track.id)}
-            <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
-                <button class="hover:underline text-sm">Insert track below...</button>
-            </div>
-        {/if}
+<div
+    style="position: relative; width: 100%; height: {$virtualizer.getTotalSize()}px;"
+>
+    <div
+        style="position: abosolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItems[0] ? virtualItems[0].start : 0}px);"
+    >
+        {#each virtualItems as virtItem (`${tracks[virtItem.index].track.id}:${virtItem.index}`)}
+            <Track
+                index={virtItem.index}
+                on:moreOptions={onMoreOptionsClick}
+                track={tracks[virtItem.index].track}
+                class={`${selectedTrackState.isActive(tracks[virtItem.index].track.id) ? 'bg-gray-200' : ''}`}
+            />
+            {#if optionsDropdownState.isActive(tracks[virtItem.index].track.id)}
+                <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
+                    <button class="hover:underline text-sm">Insert track below...</button>
+                </div>
+            {/if}
+        {/each}
     </div>
-{/each}
+</div>
 </OverlayScrollbarsComponent>
-{/if}
 
 <style>
     :global(.os-theme-dark) {
