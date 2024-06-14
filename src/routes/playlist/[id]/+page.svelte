@@ -270,6 +270,6 @@
 </div>
 
 <TrackList
-    tracks={data.tracks}
+    bind:tracks={data.tracks}
 />
 
