@@ -2,6 +2,10 @@
 
 Allows users to manipulate their Spotify playlists from a web interface.
 
+## Disclaimer
+This application is still in development! I am not responsible for overwritten or deleted playlists.
+**Please, use this _carefully_ for the time being**
+
 ### Usage
 Register a Spotify API application at: https://developer.spotify.com/dashboard/create.
 
