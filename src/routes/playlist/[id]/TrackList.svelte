@@ -7,8 +7,8 @@
     import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter"
     import { createVirtualizer } from "@tanstack/svelte-virtual";
     import { isTrackData } from "./track-data";
-    import { reorderWithEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge"
-    import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/"
+    import { reorderWithEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge";
+    import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/";
 
     class IdentifiableToggle {
         value: boolean;
@@ -48,7 +48,6 @@
 
     let virtualItemElems: HTMLDivElement[] = [];
     let osRef: OverlayScrollbarsComponent | undefined;
-    $: scrollViewport = osRef?.osInstance()?.elements().viewport
 
     // Prevents reinitialization of virtualizer when tracks changes
     let count: number = tracks.length;
@@ -61,18 +60,12 @@
         overscan: 5
     })
 
-    $: console.log(scrollViewport)
-
     $: virtualItems = $virtualizer.getVirtualItems();
     $: {
         if (virtualItemElems.length) {
             virtualItemElems.forEach((elem) => $virtualizer.measureElement(elem));
         }
     }
-
-    let scrollTop: number | undefined = 0;
-    let scrollLeft: number | undefined = 0;
-    let moved: boolean = false;
 
     onMount(() => {
         return monitorForElements({
@@ -107,11 +100,11 @@
                 })
 
                 virtualItems = $virtualizer.getVirtualItems();
-            },
+            }
         })
     })
-
 </script>
+
 <OverlayScrollbarsComponent
     bind:this={osRef}
     options={{
