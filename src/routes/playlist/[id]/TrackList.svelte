@@ -8,6 +8,8 @@
     import { createVirtualizer } from "@tanstack/svelte-virtual";
     import { isTrackData } from "./track-data";
     import { reorderWithEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge";
+    import { autoScrollForElements } from "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element";
+    import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
     import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/";
 
     class IdentifiableToggle {
@@ -68,40 +70,45 @@
     }
 
     onMount(() => {
-        return monitorForElements({
-            canMonitor({ source }) {
-                console.log(isTrackData);
-                return isTrackData(source.data);
-            },
-            onDrop({ location, source }) {
-                const target = location.current.dropTargets[0];
-                if (!target) {
-                    return;
+        return combine(
+            monitorForElements({
+                canMonitor({ source }) {
+                    console.log(isTrackData);
+                    return isTrackData(source.data);
+                },
+                onDrop({ location, source }) {
+                    const target = location.current.dropTargets[0];
+                    if (!target) {
+                        return;
+                    }
+                    const sourceData = source.data;
+                    const targetData = target.data;
+
+                    if (!isTrackData(sourceData) || !isTrackData(targetData)) {
+                        return;
+                    }
+
+                    const sourceIndex = sourceData.trackIndex;
+                    const targetIndex = targetData.trackIndex;
+                    console.log(sourceIndex, targetIndex);
+
+                    const closestEdge = sourceIndex > targetIndex ? 'top' as Edge : 'bottom' as Edge;
+
+                    tracks = reorderWithEdge({
+                        list: tracks,
+                        startIndex: sourceIndex,
+                        indexOfTarget: targetIndex,
+                        closestEdgeOfTarget: closestEdge,
+                        axis: 'vertical',
+                    })
+
+                    virtualItems = $virtualizer.getVirtualItems();
                 }
-                const sourceData = source.data;
-                const targetData = target.data;
-
-                if (!isTrackData(sourceData) || !isTrackData(targetData)) {
-                    return;
-                }
-
-                const sourceIndex = sourceData.trackIndex;
-                const targetIndex = targetData.trackIndex;
-                console.log(sourceIndex, targetIndex);
-
-                const closestEdge = sourceIndex > targetIndex ? 'top' as Edge : 'bottom' as Edge;
-
-                tracks = reorderWithEdge({
-                    list: tracks,
-                    startIndex: sourceIndex,
-                    indexOfTarget: targetIndex,
-                    closestEdgeOfTarget: closestEdge,
-                    axis: 'vertical',
-                })
-
-                virtualItems = $virtualizer.getVirtualItems();
-            }
-        })
+            }),
+            autoScrollForElements({
+                element: osRef?.osInstance()?.elements().viewport!,
+            }),
+        )
     })
 </script>
 
