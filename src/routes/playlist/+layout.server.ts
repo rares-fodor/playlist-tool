@@ -2,6 +2,7 @@ import { error } from "@sveltejs/kit";
 
 import type { APIError, Page, Playlist } from "$lib/api_types";
 import type { LayoutServerLoad } from "./$types";
+import type { Image } from "$lib/api_types";
 
 
 export const load: LayoutServerLoad = async (event) => {
@@ -33,7 +34,10 @@ export const load: LayoutServerLoad = async (event) => {
     pages.unshift(initial_page)
 
     // Flatten items field of all Page items returned
-    const playlists: Playlist[] = pages.flatMap((page) => page.items)
+    let playlists: Playlist[] = pages.flatMap((page) => page.items)
+
+    let placeholderIconUrl = "https://placehold.co/300x300?text="
+    playlists.map(playlist => { if (!playlist.images) { playlist.images = [{ url: `${placeholderIconUrl}${playlist.name[0]}`, height: 300, width: 300 } as Image]} })
 
     return {
         user: event.locals.user,
