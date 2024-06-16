@@ -14,9 +14,14 @@
         dispatch('confirm');
         if (confirmMessage === undefined) {
             showModal = false;
-            console.log(showModal)
         }
         confirmed = true;
+    }
+
+    $: {
+        if (!showModal) {
+            confirmed = false;
+        }
     }
 
 </script>
