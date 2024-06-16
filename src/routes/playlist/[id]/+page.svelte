@@ -1,6 +1,7 @@
 <script lang="ts">
     import TrackList from './TrackList.svelte';
     import ConfirmModal from '$lib/components/modal/ConfirmModal.svelte';
+    import Button from '$lib/components/Button.svelte';
     import Icon from '$lib/components/Icon.svelte';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
     import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
@@ -143,39 +144,45 @@
 <!-- Title buttons -->
 <div class="grid grid-cols-3">
     <div class="flex gap-2">
-        <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={() => {}}>Log order</button>
-        <button class="p-1 bg-gray-200 hover:bg-gray-300" on:click={shuffleHandler}>Shuffle</button>
+        <Button>Log order</Button>
+        <Button on:click={shuffleHandler}>Shuffle</Button>
     </div>
     <div class="flex justify-center gap-2">
         <!-- Dropdown handle -->
         <div class="inline-block bg-gray-200 group">
             {#if target_playlist === undefined}
-                <button class="p-1">Select target</button>
+                <Button>Select target</Button>
             {:else}
-                <button class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis">
-                    <Icon src={target_playlist.images[0].url} size="small" />
-                    <span>{target_playlist.name}</span>
-                </button>
+                <Button
+                    class="flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+                >
+                    <svelte:fragment>
+                        <Icon src={target_playlist.images[0].url} size="small" />
+                        <span>{target_playlist.name}</span>
+                    </svelte:fragment>
+                </Button>
             {/if}
             <!-- Dropdown content --->
             <div
                 class="hidden group-hover:block absolute bg-gray-200 max-h-[600px] overflow-y-scroll overscroll-contain z-20"
             >
-                <button
-                    class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+                <Button
+                    class="flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
                     on:click={() => onTargetRemoved()}
                 >
                     --- Remove selection ---
-                </button>
+                </Button>
                 {#each valid_targets as playlist}
                     {#if playlist.id !== current_playlist.id }
-                        <button
-                            class="p-1 hover:bg-gray-300 flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
+                        <Button
+                            class="flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
                             on:click={() => onTargetSelected(playlist)}
                         >
-                            <Icon src={playlist.images[0].url} size="small" />
-                            <span>{playlist.name}</span>
-                        </button>
+                            <svelte:fragment>
+                                <Icon src={playlist.images[0].url} size="small" />
+                                <span>{playlist.name}</span>
+                            </svelte:fragment>
+                        </Button>
                     {/if}
                 {/each}
             </div>
@@ -185,13 +192,13 @@
         {/if}
     </div>
 
-    <button
-        style="margin-left: auto;"
-        class={`${isCommitDisabled ? 'opacity-50 cursor-not-allowed' : ''} p-1 bg-gray-200 hover:bg-gray-300`}
+    <Button
+        enabled={!isCommitDisabled}
         on:click={() => showCommitModal = true}
+        class="ml-auto"
     >
         Commit
-    </button>
+    </Button>
     <ConfirmModal
         on:confirm={commit}
         bind:showModal={showCommitModal}
