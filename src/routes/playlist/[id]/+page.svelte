@@ -8,10 +8,6 @@
     import type { PageData } from "./$types";
     import type { Playlist } from '$lib/api_types';
 
-
-    import { draggable } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
-    import { onMount } from 'svelte';
-
     export let data: PageData;
 
     enum SortDirection {
@@ -77,7 +73,6 @@
 
     let showCommitModal: boolean = false;
 
-
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
     function shuffleHandler() {
@@ -105,23 +100,8 @@
         console.log(reply);
     }
 
-    // Executes when drag & drop event ends
-    function onEndHandler(event: CustomEvent<{ oldIndex: number | undefined, newIndex: number | undefined }>) {
-        let old_idx = event.detail.oldIndex;
-        let new_idx = event.detail.newIndex;
-
-        if (old_idx === undefined || new_idx === undefined) {
-            return;
-        }
-
-        const elem = data.tracks[old_idx];
-        data.tracks.splice(old_idx, 1);
-        data.tracks.splice(new_idx, 0, elem);
-        data.tracks = data.tracks;
-    }
-
     function onTargetSelected(playlist: Playlist) {
-        console.log(playlist.name);
+        console.log(`Target selected: ${playlist.name}`);
         target_playlist = playlist;
     }
 
@@ -156,16 +136,6 @@
             sortTracks(column, sortState.direction);
         }
     }
-
-    $: console.log(data.tracks)
-
-    let dragTitle: HTMLElement;
-
-    onMount(() => {
-        return draggable({
-            element: dragTitle
-        })
-    })
 
 </script>
 
@@ -236,7 +206,6 @@
     <Icon src={current_playlist.images[0].url} size="large" />
     <div class="flex flex-col overflow-hidden grow max-h-24">
         <span
-            bind:this={dragTitle}
             class="inline-block grow overflow-hidden font-semibold text-3xl/tight"
         >
             {current_playlist.name}
