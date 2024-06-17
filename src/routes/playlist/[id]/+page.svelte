@@ -5,9 +5,13 @@
     import Icon from '$lib/components/Icon.svelte';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
     import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
+    import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz'
+    import MaterialSymbolsShuffle from '~icons/material-symbols/shuffle'
+    import MaterialSymbolsCheckCircle from '~icons/material-symbols/check-circle'
 
     import type { PageData } from "./$types";
     import type { Playlist } from '$lib/api_types';
+    import Modal from '$lib/components/modal/Modal.svelte';
 
     export let data: PageData;
 
@@ -73,6 +77,7 @@
     const valid_targets = data.playlists.filter(canCommit);
 
     let showCommitModal: boolean = false;
+    let showTargetSelectModal: boolean = false;
 
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
@@ -140,112 +145,121 @@
 
 </script>
 
-
-<!-- Title buttons -->
-<div class="grid grid-cols-3">
-    <div class="flex gap-2">
-        <Button>Log order</Button>
-        <Button on:click={shuffleHandler}>Shuffle</Button>
-    </div>
-    <div class="flex justify-center gap-2">
-        <!-- Dropdown handle -->
-        <div class="inline-block bg-gray-200 group">
-            {#if target_playlist === undefined}
-                <Button>Select target</Button>
-            {:else}
-                <Button
-                    class="flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
-                >
-                    <svelte:fragment>
-                        <Icon src={target_playlist.images[0].url} size="small" />
-                        <span>{target_playlist.name}</span>
-                    </svelte:fragment>
-                </Button>
-            {/if}
-            <!-- Dropdown content --->
-            <div
-                class="hidden group-hover:block absolute bg-gray-200 max-h-[600px] overflow-y-scroll overscroll-contain z-20"
+<!-- Playlist greeter -->
+<div class="flex flex-col my-8">
+    <!-- Playlist title card -->
+    <div class={`flex items-end gap-3`}>
+        <Icon src={current_playlist.images[0].url} size="large" />
+        <div class="flex flex-col overflow-hidden max-h-24">
+            <span
+                class="inline-block overflow-hidden font-semibold text-3xl/tight"
             >
-                <Button
-                    class="flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
-                    on:click={() => onTargetRemoved()}
-                >
-                    --- Remove selection ---
-                </Button>
-                {#each valid_targets as playlist}
-                    {#if playlist.id !== current_playlist.id }
-                        <Button
-                            class="flex items-center gap-1 max-w-96 min-h-5 w-full whitespace-nowrap overflow-hidden overflow-ellipsis"
-                            on:click={() => onTargetSelected(playlist)}
-                        >
-                            <svelte:fragment>
-                                <Icon src={playlist.images[0].url} size="small" />
-                                <span>{playlist.name}</span>
-                            </svelte:fragment>
-                        </Button>
-                    {/if}
-                {/each}
-            </div>
+                {current_playlist.name}
+            </span>
+            <span
+                class="inline-block text-gray-800 overflow-hidden whitespace-nowrap overflow-ellipsis text-base/tight"
+            >
+                {@html current_playlist.description}
+            </span>
         </div>
-        {#if target_playlist !== undefined}
-            <a data-sveltekit-reload href={`/playlist/${target_playlist.id}`} class="p-1 bg-gray-200 hover:bg-gray-300">Go to target</a>
-        {/if}
+    </div>
+    <div class="flex flex-row items-center gap-1 mt-3 pt-3 border-t border-t-black">
+        <!-- Shuffle -->
+        <button
+            on:click={shuffleHandler}
+        >
+            <MaterialSymbolsShuffle
+                style="width: 2em; height: 2em;"
+                class="text-gray-700 hover:text-black"
+            />
+        </button>
+
+        <!-- More -->
+        <MaterialSymbolsMoreHoriz
+            style="width: 2em; height: 2em;"
+            class="text-gray-700 hover:text-black"
+        />
+
+        <!-- Commit -->
+        <div class="flex ml-auto gap-2">
+            <div class="border-b border-black hover:bg-gray-200 h-9 p-1">
+                <button
+                    on:click={() => showTargetSelectModal = true}
+                >
+                    {#if target_playlist === undefined}
+                        Click here to select a target
+                    {:else}
+                        <div class="flex items-center gap-2">
+                            <Icon size="medium" src={target_playlist.images[0].url} />
+                            <span>{target_playlist.name}</span>
+                        </div>
+                    {/if}
+                </button>
+            </div>
+            <button
+                on:click={() => showCommitModal = true}
+                class={`${isCommitDisabled ? 'cursor-not-allowed' : ''}`}
+            >
+                <MaterialSymbolsCheckCircle
+                    style="width: 2em; height: 2em;"
+                    class={`text-gray-700 ${isCommitDisabled ? 'hover:text-red-600' : 'hover:text-green-600'}`}
+                />
+            </button>
+
+        </div>
+    </div>
+</div>
+
+
+<div class="flex flex-col">
+    <!-- Table header -->
+    <div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-400 py-1">
+    {#each sortableColumns as column}
+        <button on:click={() => onColumnClicked(column)}>
+            <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-10' : ''}`}> <!-- NOTE very hacky --->
+                <span>{column}</span>
+                <div class="w-4 h-4">
+                    {#if sortState.column === column}
+                        {#if sortState.direction === SortDirection.Ascending}
+                            <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                        {:else if sortState.direction === SortDirection.Descending}
+                            <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                        {/if}
+                    {/if}
+                </div>
+            </div>
+        </button>
+    {/each}
     </div>
 
-    <Button
-        enabled={!isCommitDisabled}
-        on:click={() => showCommitModal = true}
-        class="ml-auto"
-    >
-        Commit
-    </Button>
+    <TrackList
+        bind:tracks={data.tracks}
+    />
+</div>
+
+{#if showCommitModal}
     <ConfirmModal
         on:confirm={commit}
         bind:showModal={showCommitModal}
         question={commitDialogText}
         confirmMessage="Changes committed succesfully"
     /> <!-- TODO change confirm message with commit response -->
-
-</div>
-
-<!-- Playlist greeter -->
-<div class="flex items-end py-8 gap-3">
-    <Icon src={current_playlist.images[0].url} size="large" />
-    <div class="flex flex-col overflow-hidden grow max-h-24">
-        <span
-            class="inline-block grow overflow-hidden font-semibold text-3xl/tight"
-        >
-            {current_playlist.name}
-        </span>
-        <span
-            class="inline-block text-gray-800 overflow-hidden whitespace-nowrap overflow-ellipsis text-base/tight"
-        >
-            {@html current_playlist.description}
-        </span>
-    </div>
-</div>
-
-<!-- Table header -->
-<div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-700 py-1">
-{#each sortableColumns as column}
-    <button on:click={() => onColumnClicked(column)}>
-        <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-10' : ''}`}> <!-- NOTE very hacky --->
-            <span>{column}</span>
-            <div class="w-4 h-4">
-                {#if sortState.column === column}
-                    {#if sortState.direction === SortDirection.Ascending}
-                        <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
-                    {:else if sortState.direction === SortDirection.Descending}
-                        <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
-                    {/if}
-                {/if}
-            </div>
+{/if}
+{#if showTargetSelectModal}
+    <Modal
+        bind:showModal={showTargetSelectModal}
+    >
+        <div slot="body" class="flex flex-col gap-1 overflow-auto max-h-[200px]">
+            {#each valid_targets as target}
+                <button
+                    on:click={() => onTargetSelected(target)}
+                >
+                    <div class="flex items-center gap-1 max-h-4 py-3 shrink-0 hover:bg-gray-200 overflow-hidden overflow-ellipsis whitespace-nowrap">
+                        <Icon size="small" src={target.images[0].url} />
+                        <span>{target.name}</span>
+                    </div>
+                </button>
+            {/each}
         </div>
-    </button>
-{/each}
-</div>
-
-<TrackList
-    bind:tracks={data.tracks}
-/>
-
+    </Modal>
+{/if}

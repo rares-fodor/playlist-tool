@@ -139,7 +139,7 @@
             autoHide: 'leave'
         },
     }}
-    class="overflow-y-auto h-[750px] contain-strict"
+    class="h-[650px]"
 >
 <div
     style="position: relative; width: 100%; height: {$virtualizer.getTotalSize()}px;"
