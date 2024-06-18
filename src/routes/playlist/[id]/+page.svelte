@@ -1,8 +1,9 @@
 <script lang="ts">
     import TrackList from './TrackList.svelte';
-    import ConfirmModal from '$lib/components/modal/ConfirmModal.svelte';
-    import Button from '$lib/components/Button.svelte';
     import Icon from '$lib/components/Icon.svelte';
+    import * as Dialog from '$lib/components/ui/dialog';
+    import * as AlertDialog from '$lib/components/ui/alert-dialog';
+    import { ScrollArea } from '$lib/components/ui/scroll-area';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
     import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
     import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz'
@@ -11,7 +12,6 @@
 
     import type { PageData } from "./$types";
     import type { Playlist } from '$lib/api_types';
-    import Modal from '$lib/components/modal/Modal.svelte';
 
     export let data: PageData;
 
@@ -76,9 +76,6 @@
 
     const valid_targets = data.playlists.filter(canCommit);
 
-    let showCommitModal: boolean = false;
-    let showTargetSelectModal: boolean = false;
-
     // Durstenfeld shuffle
     // Modifies data.tracks in place, triggers an update for the track list view and the URI array
     function shuffleHandler() {
@@ -107,7 +104,10 @@
     }
 
     function onTargetSelected(playlist: Playlist) {
-        console.log(`Target selected: ${playlist.name}`);
+        if (target_playlist === playlist) {
+            target_playlist = undefined;
+            return;
+        }
         target_playlist = playlist;
     }
 
@@ -182,30 +182,70 @@
 
         <!-- Commit -->
         <div class="flex ml-auto gap-2">
-            <div class="border-b border-black hover:bg-gray-200 h-9 p-1">
-                <button
-                    on:click={() => showTargetSelectModal = true}
-                >
+            <div class="border-b border-black hover:bg-gray-200 p-1">
+                <Dialog.Root>
                     {#if target_playlist === undefined}
-                        Click here to select a target
+                        <Dialog.Trigger>Click to choose target playlist</Dialog.Trigger>
                     {:else}
-                        <div class="flex items-center gap-2">
-                            <Icon size="medium" src={target_playlist.images[0].url} />
-                            <span>{target_playlist.name}</span>
-                        </div>
+                        <Dialog.Trigger>
+                            <div class="flex items-center gap-2 p-1">
+                                <Icon size="medium" src={target_playlist.images[0].url}/>
+                                <span>{target_playlist.name}</span>
+                            </div> 
+                        </Dialog.Trigger>
                     {/if}
-                </button>
+                    <Dialog.Content>
+                        <Dialog.Header>
+                            <Dialog.Title>Choose a target</Dialog.Title>
+                            <Dialog.Description>Changes made will be commited to the target playlist</Dialog.Description>
+                        </Dialog.Header>
+                        <ScrollArea>
+                            <div class="flex flex-col gap-1 max-h-[350px]">
+                                {#each valid_targets as target}
+                                    <button
+                                        on:click={() => onTargetSelected(target)}
+                                        class={`${target === target_playlist ? 'bg-green-200' : 'hover:bg-gray-200'}`}
+                                    >
+                                        <div class="flex items-center gap-2 p-1">
+                                            <Icon size="medium" src={target.images[0].url}/>
+                                            <span>{target.name}</span>
+                                        </div> 
+                                    </button>
+                                {/each}
+                            </div>
+                        </ScrollArea>
+                        <Dialog.Footer>
+                            <Dialog.Close>Ok</Dialog.Close>
+                        </Dialog.Footer>
+                    </Dialog.Content>
+                </Dialog.Root>
             </div>
-            <button
-                on:click={() => showCommitModal = true}
-                class={`${isCommitDisabled ? 'cursor-not-allowed' : ''}`}
-            >
-                <MaterialSymbolsCheckCircle
-                    style="width: 2em; height: 2em;"
-                    class={`text-gray-700 ${isCommitDisabled ? 'hover:text-red-600' : 'hover:text-green-600'}`}
-                />
-            </button>
-
+            <AlertDialog.Root>
+                <AlertDialog.Trigger>
+                    <MaterialSymbolsCheckCircle
+                        style="width: 2em; height: 2em;"
+                        class={`text-gray-700 ${isCommitDisabled ? 'hover:text-red-600' : 'hover:text-green-600'}`}
+                    />
+                </AlertDialog.Trigger>
+                <AlertDialog.Content>
+                    <AlertDialog.Header>
+                        {#if isCommitDisabled }
+                            <AlertDialog.Title>Commit not allowed</AlertDialog.Title>
+                        {:else}
+                            <AlertDialog.Title>Are you sure?</AlertDialog.Title>
+                        {/if}
+                        <AlertDialog.Description>{commitDialogText}</AlertDialog.Description>
+                    </AlertDialog.Header>
+                    <AlertDialog.Footer>
+                        {#if isCommitDisabled }
+                            <AlertDialog.Cancel>Ok</AlertDialog.Cancel>
+                        {:else}
+                            <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                            <AlertDialog.Action on:click={commit}>Ok</AlertDialog.Action>
+                        {/if}
+                    </AlertDialog.Footer>
+                </AlertDialog.Content>
+            </AlertDialog.Root>
         </div>
     </div>
 </div>
@@ -237,29 +277,3 @@
     />
 </div>
 
-{#if showCommitModal}
-    <ConfirmModal
-        on:confirm={commit}
-        bind:showModal={showCommitModal}
-        question={commitDialogText}
-        confirmMessage="Changes committed succesfully"
-    /> <!-- TODO change confirm message with commit response -->
-{/if}
-{#if showTargetSelectModal}
-    <Modal
-        bind:showModal={showTargetSelectModal}
-    >
-        <div slot="body" class="flex flex-col gap-1 overflow-auto max-h-[200px]">
-            {#each valid_targets as target}
-                <button
-                    on:click={() => onTargetSelected(target)}
-                >
-                    <div class="flex items-center gap-1 max-h-4 py-3 shrink-0 hover:bg-gray-200 overflow-hidden overflow-ellipsis whitespace-nowrap">
-                        <Icon size="small" src={target.images[0].url} />
-                        <span>{target.name}</span>
-                    </div>
-                </button>
-            {/each}
-        </div>
-    </Modal>
-{/if}
