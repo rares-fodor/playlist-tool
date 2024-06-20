@@ -1,7 +1,11 @@
 <script lang="ts">
     import Track from "./Track.svelte";
+    import Icon from "$lib/components/Icon.svelte";
     import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
     import type { PlaylistedTrack } from "$lib/api_types";
+
+    import * as Dialog from "$lib/components/ui/dialog";
+    import { ScrollArea } from "$lib/components/ui/scroll-area";
 
     import { onMount } from "svelte";
     import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter"
@@ -13,41 +17,7 @@
     import { triggerPostMoveFlash } from "@atlaskit/pragmatic-drag-and-drop-flourish/trigger-post-move-flash"
     import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/";
 
-    class IdentifiableToggle {
-        value: boolean;
-        id: string | undefined;
-
-        constructor() {
-            this.value = false;
-            this.id = undefined;
-        }
-        isActive(id: string): boolean {
-            return this.value && this.id === id;
-        }
-        toggle(id: string) {
-            if (this.id === id) {
-                this.value = !this.value;
-            } else {
-                this.id = id;
-                this.value = true;
-            }
-        }
-        deactivate() {
-            this.value = false;
-        }
-    }
-
     export let tracks: PlaylistedTrack[];
-
-    let optionsDropdownState = new IdentifiableToggle();
-    let selectedTrackState = new IdentifiableToggle();
-
-    function onMoreOptionsClick(event: CustomEvent<{ trackId: string }>) {
-        selectedTrackState.toggle(event.detail.trackId);
-        optionsDropdownState.toggle(event.detail.trackId);
-        selectedTrackState = selectedTrackState;
-        optionsDropdownState = optionsDropdownState; // Force reactivity
-    }
 
     let virtualItemElems: HTMLDivElement[] = [];
     let osRef: OverlayScrollbarsComponent | undefined;
@@ -76,17 +46,6 @@
                 canMonitor({ source }) {
                     console.log(isTrackData);
                     return isTrackData(source.data);
-                },
-                onDrag() {
-                    // When drag starts we should collapse open drop-downs and unselect their parent tracks
-                    if (optionsDropdownState.value) {
-                        optionsDropdownState.deactivate();
-                        optionsDropdownState = optionsDropdownState;
-                    }
-                    if (selectedTrackState.value) {
-                        selectedTrackState.deactivate();
-                        selectedTrackState = selectedTrackState;
-                    }
                 },
                 onDrop({ location, source }) {
                     const target = location.current.dropTargets[0];
@@ -129,6 +88,36 @@
             }),
         )
     })
+
+    let trackSelectDialogOpen = false;
+    let handleTrackSelect: (index: number) => void;
+    function handleInsert(event: CustomEvent<{side: 'above' | 'below', index: number }>) {
+        handleTrackSelect = (originIndex: number) => {
+            let targetIndex = event.detail.index;
+
+            if (event.detail.side === "above" && originIndex < targetIndex) {
+                targetIndex--;
+            } else if (event.detail.side === "below" && originIndex > targetIndex) {
+                targetIndex++;
+            }
+
+            const elem = tracks[originIndex];
+            tracks.splice(originIndex, 1);
+            tracks.splice(targetIndex, 0, elem);
+
+            setTimeout(() => {
+                const element = document.querySelector(`[data-track-index="${targetIndex}"]`)
+                if (element instanceof HTMLElement) {
+                    triggerPostMoveFlash(element);
+                }
+            }, 150)
+
+            virtualItems = $virtualizer.getVirtualItems();
+        }
+
+        trackSelectDialogOpen = true;
+    }
+
 </script>
 
 <OverlayScrollbarsComponent
@@ -136,7 +125,7 @@
     options={{
         scrollbars: {
             theme: 'os-theme-dark',
-            autoHide: 'leave'
+            autoHide: 'scroll'
         },
     }}
     class="h-[650px]"
@@ -151,20 +140,37 @@
             <div data-track-index={virtItem.index}>
                 <Track
                     index={virtItem.index}
-                    on:moreOptions={onMoreOptionsClick}
                     track={tracks[virtItem.index].track}
-                    class={`${selectedTrackState.isActive(tracks[virtItem.index].track.id) ? 'bg-gray-200' : ''}`}
+                    on:insert={handleInsert}
                 />
-                {#if optionsDropdownState.isActive(tracks[virtItem.index].track.id)}
-                    <div class="flex flex-col gap-1 bg-gray-200 border-b-gray-400 border-b">
-                        <button class="hover:underline text-sm">Insert track below...</button>
-                    </div>
-                {/if}
             </div>
         {/each}
     </div>
 </div>
 </OverlayScrollbarsComponent>
+
+<Dialog.Root bind:open={trackSelectDialogOpen}>
+    <Dialog.Content>
+        <Dialog.Header>
+            <Dialog.Title>Select a track</Dialog.Title>
+        </Dialog.Header>
+        <ScrollArea>
+            <div class="flex flex-col gap-1 max-h-[350px]">
+                {#each tracks as track, index}
+                    <button
+                        on:click={() => { handleTrackSelect?.(index); trackSelectDialogOpen = false }}
+                    >
+                        <div class="flex items-center gap-2 p-1">
+                            <Icon size="medium" src={track.track.album.images[0].url}/>
+                            <span>{track.track.name}</span>
+                        </div>
+                    </button>
+                {/each}
+            </div>
+        </ScrollArea>
+    </Dialog.Content>
+</Dialog.Root>
+
 
 <style>
     :global(.os-theme-dark) {

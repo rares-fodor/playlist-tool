@@ -3,6 +3,7 @@
     import Icon from '$lib/components/Icon.svelte';
     import * as Dialog from '$lib/components/ui/dialog';
     import * as AlertDialog from '$lib/components/ui/alert-dialog';
+    import * as Card from '$lib/components/ui/card';
     import { ScrollArea } from '$lib/components/ui/scroll-area';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
     import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
@@ -12,6 +13,7 @@
 
     import type { PageData } from "./$types";
     import type { Playlist } from '$lib/api_types';
+    import Button from '$lib/components/ui/button/button.svelte';
 
     export let data: PageData;
 
@@ -165,20 +167,21 @@
     </div>
     <div class="flex flex-row items-center gap-1 mt-3 pt-3 border-t border-t-black">
         <!-- Shuffle -->
-        <button
+        <Button
+            variant="ghost"
+            size="icon"
             on:click={shuffleHandler}
         >
-            <MaterialSymbolsShuffle
-                style="width: 2em; height: 2em;"
-                class="text-gray-700 hover:text-black"
-            />
-        </button>
+            <MaterialSymbolsShuffle style="width: 2em; height: 2em;" />
+        </Button>
 
         <!-- More -->
-        <MaterialSymbolsMoreHoriz
-            style="width: 2em; height: 2em;"
-            class="text-gray-700 hover:text-black"
-        />
+        <Button
+            variant="ghost"
+            size="icon"
+        >
+            <MaterialSymbolsMoreHoriz style="width: 2em; height: 2em;" />
+        </Button>
 
         <!-- Commit -->
         <div class="flex ml-auto gap-2">

@@ -1,6 +1,10 @@
 <script lang="ts">
     import Icon from "$lib/components/Icon.svelte";
 
+    import { Button } from "$lib/components/ui/button";
+    import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+    import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz';
+
     import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
     import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
     import { onMount, createEventDispatcher } from "svelte";
@@ -15,11 +19,9 @@
         'is-dragging-over': 'bg-gray-200'
     }
 
-    export { className as class };
     export let track: TrackItem;
     export let index: number;
 
-    let className: string;
     let element: HTMLElement;
 
     let state: DragState = 'idle';
@@ -63,11 +65,11 @@
     })
 
     const dispatch = createEventDispatcher<{
-        moreOptions: { trackId: string }
+        insert: { side: 'above' | 'below', index: number }
     }>();
 
-    function moreOptions() {
-        dispatch('moreOptions', { trackId: track.id });
+    function insert(side: 'above' | 'below') {
+        dispatch('insert', { side: side, index: index });
     }
 
     let name = track.name;
@@ -79,9 +81,12 @@
 
 </script>
 
-<button class={`${className} w-full text-left ${stateStyles[state] ?? ''}`} on:click={moreOptions} bind:this={element}>
-<div class="grid grid-cols-[1fr_1fr_2rem] border-b border-b-gray-400 py-1 group">
-    <div class="flex min-w-0 items-center max-h-9 gap-2">
+<div
+    bind:this={element}
+    class="grid grid-cols-[1fr_15px]"
+>
+<div class={`grid grid-cols-[1fr_1fr_2.2rem] border-b border-b-gray-400 py-1 group ${stateStyles[state] ?? ''}`}>
+    <div class="flex min-w-0 items-center max-h-11 gap-2">
         <Icon size="medium" src={imageUrl}/>
         <div class="flex flex-col justify-center whitespace-nowrap overflow-hidden">
             <section class="overflow-hidden overflow-ellipsis text-base/tight">{name}</section>
@@ -91,5 +96,32 @@
     <div class="flex items-center text-sm overflow-hidden whitespace-nowrap overflow-ellipsis">
         {album.name}
     </div>
+    <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+            <div class="flex items-center">
+                <Button
+                    size="icon"
+                    variant="outline"
+                    class="h-8 w-8"
+                >
+                    <MaterialSymbolsMoreHoriz
+                        style="width: 2em; height: 2em;"
+                        class={`text-gray-700 hover:text-black`}
+                    />
+                </Button>
+            </div>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content
+            side="left"
+            align="start"
+        >
+            <DropdownMenu.Group>
+                <DropdownMenu.Label>More options</DropdownMenu.Label>
+                <DropdownMenu.Separator/>
+                <DropdownMenu.Item on:click={() => insert('below')} > Insert below </DropdownMenu.Item>
+                <DropdownMenu.Item on:click={() => insert('above')} > Insert above </DropdownMenu.Item>
+            </DropdownMenu.Group>
+        </DropdownMenu.Content>
+    </DropdownMenu.Root>
 </div>
-</button>
+</div>
