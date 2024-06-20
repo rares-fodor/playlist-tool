@@ -16,6 +16,7 @@
     import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
     import { triggerPostMoveFlash } from "@atlaskit/pragmatic-drag-and-drop-flourish/trigger-post-move-flash"
     import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/";
+    import { Description } from "$lib/components/ui/alert-dialog";
 
     export let tracks: PlaylistedTrack[];
 
@@ -90,6 +91,7 @@
     })
 
     let trackSelectDialogOpen = false;
+    let trackSelectDescription: string = ""; 
     let handleTrackSelect: (index: number) => void;
     function handleInsert(event: CustomEvent<{side: 'above' | 'below', index: number }>) {
         handleTrackSelect = (originIndex: number) => {
@@ -114,6 +116,10 @@
 
             virtualItems = $virtualizer.getVirtualItems();
         }
+
+        const track = tracks[event.detail.index].track
+        trackSelectDescription = 
+            `Selected track will be moved ${event.detail.side} "${track.artists[0].name} - ${track.name}"`
 
         trackSelectDialogOpen = true;
     }
@@ -153,6 +159,7 @@
     <Dialog.Content>
         <Dialog.Header>
             <Dialog.Title>Select a track</Dialog.Title>
+            <Dialog.Description>{trackSelectDescription}</Dialog.Description>
         </Dialog.Header>
         <ScrollArea>
             <div class="flex flex-col gap-1 max-h-[350px]">
