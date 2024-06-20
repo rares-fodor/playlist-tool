@@ -116,10 +116,9 @@
             align="start"
         >
             <DropdownMenu.Group>
-                <DropdownMenu.Label>More options</DropdownMenu.Label>
-                <DropdownMenu.Separator/>
-                <DropdownMenu.Item on:click={() => insert('below')} > Insert below </DropdownMenu.Item>
-                <DropdownMenu.Item on:click={() => insert('above')} > Insert above </DropdownMenu.Item>
+                <DropdownMenu.Label>Insert</DropdownMenu.Label>
+                    <DropdownMenu.Item on:click={() => insert('above')} > Insert above </DropdownMenu.Item>
+                    <DropdownMenu.Item on:click={() => insert('below')} > Insert below </DropdownMenu.Item>
             </DropdownMenu.Group>
         </DropdownMenu.Content>
     </DropdownMenu.Root>
