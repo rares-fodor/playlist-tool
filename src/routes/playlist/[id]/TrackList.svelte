@@ -6,6 +6,7 @@
 
     import * as Dialog from "$lib/components/ui/dialog";
     import { ScrollArea } from "$lib/components/ui/scroll-area";
+    import { Input } from "$lib/components/ui/input";
 
     import { onMount } from "svelte";
     import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter"
@@ -91,8 +92,11 @@
     })
 
     let trackSelectDialogOpen = false;
+    let trackSelectSearchValue: string = "";
     let trackSelectDescription: string = ""; 
+    let trackSelectTracks: PlaylistedTrack[] = tracks;
     let handleTrackSelect: (index: number) => void;
+
     function handleInsert(event: CustomEvent<{side: 'above' | 'below', index: number }>) {
         handleTrackSelect = (originIndex: number) => {
             let targetIndex = event.detail.index;
@@ -122,6 +126,18 @@
             `Selected track will be moved ${event.detail.side} "${track.artists[0].name} - ${track.name}"`
 
         trackSelectDialogOpen = true;
+    }
+
+    $: {
+        if (trackSelectSearchValue === "") {
+            trackSelectTracks = tracks;
+        } else {
+            const searchValueNormalized = trackSelectSearchValue.toLocaleLowerCase().replace('/\s+g', '');
+            trackSelectTracks = tracks.filter(track => {
+                const trackNameNormalized = track.track.name.toLowerCase().replace('/s\+g', '');
+                return trackNameNormalized.includes(searchValueNormalized, 0)
+            })
+        }
     }
 
 </script>
@@ -160,10 +176,15 @@
         <Dialog.Header>
             <Dialog.Title>Select a track</Dialog.Title>
             <Dialog.Description>{trackSelectDescription}</Dialog.Description>
+            <Input
+                bind:value={trackSelectSearchValue}
+                type="search"
+                placeholder="Search track"
+            />
         </Dialog.Header>
         <ScrollArea>
-            <div class="flex flex-col gap-1 max-h-[350px]">
-                {#each tracks as track, index}
+            <div class="flex flex-col gap-1 h-[350px]">
+                {#each trackSelectTracks as track, index}
                     <button
                         on:click={() => { handleTrackSelect?.(index); trackSelectDialogOpen = false }}
                     >
