@@ -95,11 +95,12 @@
     let trackSelectSearchValue: string = "";
     let trackSelectDescription: string = ""; 
     let trackSelectTracks: PlaylistedTrack[] = tracks;
-    let handleTrackSelect: (index: number) => void;
+    let handleTrackSelect: (id: string) => void;
 
     function handleInsert(event: CustomEvent<{side: 'above' | 'below', index: number }>) {
-        handleTrackSelect = (originIndex: number) => {
+        handleTrackSelect = (id: string) => {
             let targetIndex = event.detail.index;
+            let originIndex = tracks.findIndex(track => track.id === id)
 
             if (event.detail.side === "above" && originIndex < targetIndex) {
                 targetIndex--;
@@ -158,7 +159,7 @@
     <div
         style="position: abosolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItems[0] ? virtualItems[0].start : 0}px);"
     >
-        {#each virtualItems as virtItem (`${tracks[virtItem.index].track.id}:${virtItem.index}`)}
+        {#each virtualItems as virtItem (tracks[virtItem.index].id)}
             <div data-track-index={virtItem.index}>
                 <Track
                     index={virtItem.index}
@@ -184,9 +185,9 @@
         </Dialog.Header>
         <ScrollArea>
             <div class="flex flex-col gap-1 h-[350px]">
-                {#each trackSelectTracks as track, index}
+                {#each trackSelectTracks as track}
                     <button
-                        on:click={() => { handleTrackSelect?.(index); trackSelectDialogOpen = false }}
+                        on:click={() => { handleTrackSelect?.(track.id); trackSelectDialogOpen = false }}
                     >
                         <div class="flex items-center gap-2 p-1">
                             <Icon size="medium" src={track.track.album.images[0].url}/>

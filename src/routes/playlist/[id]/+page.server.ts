@@ -33,6 +33,9 @@ export const load: PageServerLoad = async (event) => {
 
     const tracks: PlaylistedTrack[] = pages.flatMap(page => page.items);
 
+    // Add list IDs. Track's id field is insufficient if playlist contains duplicate tracks
+    tracks.map((track, index) => track.id = `${track.track.id}:${index}`)
+
     return {
         id: event.params.id,
         tracks: tracks

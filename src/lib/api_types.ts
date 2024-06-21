@@ -95,6 +95,7 @@ export interface PlaylistedTrack<Item extends TrackItem = TrackItem> {
     is_local: boolean
     primary_color: string
     track: Item
+    id: string
 }
 
 export type TrackItem = Track;
