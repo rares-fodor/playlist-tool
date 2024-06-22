@@ -5,7 +5,6 @@
     import type { PlaylistedTrack } from "$lib/api_types";
 
     import * as Dialog from "$lib/components/ui/dialog";
-    import { ScrollArea } from "$lib/components/ui/scroll-area";
     import { Input } from "$lib/components/ui/input";
 
     import { onMount } from "svelte";
@@ -17,7 +16,6 @@
     import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
     import { triggerPostMoveFlash } from "@atlaskit/pragmatic-drag-and-drop-flourish/trigger-post-move-flash"
     import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/";
-    import { Description } from "$lib/components/ui/alert-dialog";
 
     export let tracks: PlaylistedTrack[];
 
@@ -27,7 +25,7 @@
     // Prevents reinitialization of virtualizer when tracks changes
     let count: number = tracks.length;
 
-    $: virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
+    $: trackListVirtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
         count,
         // @ts-ignore: Assign HTMLElement | undefined to HTMLDivElement | null
         getScrollElement: () => osRef?.osInstance()?.elements().viewport,
@@ -35,10 +33,10 @@
         overscan: 5
     })
 
-    $: virtualItems = $virtualizer.getVirtualItems();
+    $: trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
     $: {
         if (virtualItemElems.length) {
-            virtualItemElems.forEach((elem) => $virtualizer.measureElement(elem));
+            virtualItemElems.forEach((elem) => $trackListVirtualizer.measureElement(elem));
         }
     }
 
@@ -75,7 +73,7 @@
                         axis: 'vertical',
                     })
 
-                    virtualItems = $virtualizer.getVirtualItems();
+                    trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
 
                     setTimeout(() => {
                         const element = document.querySelector(`[data-track-index="${targetData.trackIndex}"]`)
@@ -96,11 +94,12 @@
     let trackSelectDescription: string = ""; 
     let trackSelectTracks: PlaylistedTrack[] = tracks;
     let handleTrackSelect: (id: string) => void;
-
     function handleInsert(event: CustomEvent<{side: 'above' | 'below', index: number }>) {
         handleTrackSelect = (id: string) => {
             let targetIndex = event.detail.index;
             let originIndex = tracks.findIndex(track => track.id === id)
+            console.log(tracks.map(t => t.id))
+            console.log(id, originIndex)
 
             if (event.detail.side === "above" && originIndex < targetIndex) {
                 targetIndex--;
@@ -119,7 +118,7 @@
                 }
             }, 150)
 
-            virtualItems = $virtualizer.getVirtualItems();
+            trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
         }
 
         const track = tracks[event.detail.index].track
@@ -129,6 +128,15 @@
         trackSelectDialogOpen = true;
     }
 
+    let trackSelectScrollRef: OverlayScrollbarsComponent | undefined;
+    $: trackSelectVirtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
+        count: trackSelectTracks.length,
+        // @ts-ignore: Assign HTMLElement | undefined to HTMLDivElement | null
+        getScrollElement: () => trackSelectScrollRef?.osInstance()?.elements().viewport,
+        estimateSize: () => 45,
+        overscan: 5
+    })
+    $: trackSelectVirtualItems = $trackSelectVirtualizer.getVirtualItems();
     $: {
         if (trackSelectSearchValue === "") {
             trackSelectTracks = tracks;
@@ -154,12 +162,12 @@
     class="h-[650px]"
 >
 <div
-    style="position: relative; width: 100%; height: {$virtualizer.getTotalSize()}px;"
+    style="position: relative; width: 100%; height: {$trackListVirtualizer.getTotalSize()}px;"
 >
     <div
-        style="position: abosolute; top: 0; left: 0; width: 100%; transform: translateY({virtualItems[0] ? virtualItems[0].start : 0}px);"
+        style="position: abosolute; top: 0; left: 0; width: 100%; transform: translateY({trackListVirtualItems[0] ? trackListVirtualItems[0].start : 0}px);"
     >
-        {#each virtualItems as virtItem (tracks[virtItem.index].id)}
+        {#each trackListVirtualItems as virtItem (tracks[virtItem.index])}
             <div data-track-index={virtItem.index}>
                 <Track
                     index={virtItem.index}
@@ -183,20 +191,33 @@
                 placeholder="Search track"
             />
         </Dialog.Header>
-        <ScrollArea>
-            <div class="flex flex-col gap-1 h-[350px]">
-                {#each trackSelectTracks as track}
-                    <button
-                        on:click={() => { handleTrackSelect?.(track.id); trackSelectDialogOpen = false }}
-                    >
-                        <div class="flex items-center gap-2 p-1">
-                            <Icon size="medium" src={track.track.album.images[0].url}/>
-                            <span>{track.track.name}</span>
-                        </div>
-                    </button>
-                {/each}
+        <OverlayScrollbarsComponent
+            bind:this={trackSelectScrollRef}
+            options={{
+                scrollbars: {
+                    theme: 'os-theme-dark',
+                }
+            }}
+            class="h-[350px]"
+        >
+            <div class="flex flex-col gap-1">
+                <div 
+                    style="position: relative; height: {$trackSelectVirtualizer.getTotalSize()}px; width: 100%"
+                >
+                    {#each trackSelectVirtualItems as virtItem}
+                        <button
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: {virtItem.size}px; transform: translateY({virtItem.start}px;"
+                            on:click={() => { handleTrackSelect?.(trackSelectTracks[virtItem.index].id); trackSelectDialogOpen = false }}
+                        >
+                            <div class="flex items-center gap-2 p-1">
+                                <Icon size="medium" src={trackSelectTracks[virtItem.index].track.album.images[0].url}/>
+                                <span>{trackSelectTracks[virtItem.index].track.name}</span>
+                            </div>
+                        </button>
+                    {/each}
+                </div>
             </div>
-        </ScrollArea>
+        </OverlayScrollbarsComponent>
     </Dialog.Content>
 </Dialog.Root>
 
