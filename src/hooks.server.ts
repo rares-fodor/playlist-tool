@@ -39,7 +39,9 @@ export const handle: Handle = async ({ event, resolve }) => {
     // Test for token refresh
     if (session) {
         if (should_refresh_token(session.access_token_expires_at)) {
-            refresh_token(session);
+            console.log(session)
+            await refresh_token(session);
+            console.log(session)
         }
     }
 
@@ -81,6 +83,7 @@ async function refresh_token(session: Session) {
 
     console.log(info);
 
+    session.access_token = tokens.accessToken;
     session.refresh_token = refresh_token;
     session.access_token_expires_at = tokens.accessTokenExpiresAt.toISOString();
 }
