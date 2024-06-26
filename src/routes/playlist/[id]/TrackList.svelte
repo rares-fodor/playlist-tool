@@ -5,7 +5,11 @@
     import type { PlaylistedTrack } from "$lib/api_types";
 
     import * as Dialog from "$lib/components/ui/dialog";
+    import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
     import { Input } from "$lib/components/ui/input";
+    import { Button } from "$lib/components/ui/button";
+
+    import { dropdownStore } from "$lib/stores";
 
     import { onMount } from "svelte";
     import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter"
@@ -94,16 +98,19 @@
     let trackSelectDescription: string = ""; 
     let trackSelectTracks: PlaylistedTrack[] = tracks;
     let handleTrackSelect: (id: string) => void;
-    function handleInsert(event: CustomEvent<{side: 'above' | 'below', index: number }>) {
+    function handleInsert(side: 'above' | 'below') {
+        // Function won't be called unless dropdown is active and if dropdown is active we know index is set
+        let index = $dropdownStore.index as number;
+
         handleTrackSelect = (id: string) => {
-            let targetIndex = event.detail.index;
+            let targetIndex = index;
             let originIndex = tracks.findIndex(track => track.id === id)
             console.log(tracks.map(t => t.id))
             console.log(id, originIndex)
 
-            if (event.detail.side === "above" && originIndex < targetIndex) {
+            if (side === "above" && originIndex < targetIndex) {
                 targetIndex--;
-            } else if (event.detail.side === "below" && originIndex > targetIndex) {
+            } else if (side === "below" && originIndex > targetIndex) {
                 targetIndex++;
             }
 
@@ -121,9 +128,9 @@
             trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
         }
 
-        const track = tracks[event.detail.index].track
+        const track = tracks[index].track
         trackSelectDescription = 
-            `Selected track will be moved ${event.detail.side} "${track.artists[0].name} - ${track.name}"`
+            `Selected track will be moved ${side} "${track.artists[0].name} - ${track.name}"`
 
         trackSelectDialogOpen = true;
     }
@@ -149,6 +156,55 @@
         }
     }
 
+    let moveToIndexValue: string;
+    let moveToIndexWarning: string | undefined = undefined;
+    let moveToIndexDialogOpen: boolean = false;
+    $: moveToIndexButtonDisabled = Number.isNaN(parseInt(moveToIndexValue))
+    $: {
+        let moveToIndexValueInt = parseInt(moveToIndexValue)
+        if (Number.isNaN(moveToIndexValueInt)) {
+            moveToIndexWarning = "Please input a number"
+        } else if (moveToIndexValueInt > tracks.length) {
+            moveToIndexWarning = "Limit exceeded, will move to bottom instead"
+        } else if (moveToIndexValueInt < 0) {
+            moveToIndexWarning = "Index negative, will move to top instead"
+        } else {
+            moveToIndexWarning = undefined
+        }
+    }
+    function handleMoveToIndex() {
+        let moveToIndexValueInt = parseInt(moveToIndexValue)
+        if (Number.isNaN(moveToIndexValueInt)) {
+            return;
+        }
+        if (moveToIndexValueInt > tracks.length) {
+            moveToIndexValueInt = tracks.length;
+        } else if (moveToIndexValueInt < 0) {
+            moveToIndexValueInt = 0;
+        }
+
+        handleMove(moveToIndexValueInt)
+    }
+
+    function handleMove(targetIndex: number) {
+        // Function won't be called unless dropdown is active and if dropdown is active we know index is set
+        let index = $dropdownStore.index as number;
+
+        const elem = tracks[index]
+        tracks.splice(index, 1)
+        tracks.splice(targetIndex, 0, elem)
+
+        setTimeout(() => {
+            const element = document.querySelector(`[data-track-index="${targetIndex}"]`)
+            if (element instanceof HTMLElement) {
+                triggerPostMoveFlash(element);
+            }
+        }, 150)
+
+        trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
+    }
+
+
 </script>
 
 <OverlayScrollbarsComponent
@@ -172,7 +228,6 @@
                 <Track
                     index={virtItem.index}
                     track={tracks[virtItem.index].track}
-                    on:insert={handleInsert}
                 />
             </div>
         {/each}
@@ -221,6 +276,85 @@
     </Dialog.Content>
 </Dialog.Root>
 
+{#if $dropdownStore.open}
+    <div
+        class="absolute"
+        style="top: {$dropdownStore.position.top}px; left: {$dropdownStore
+            .position.left}px;"
+    >
+        <DropdownMenu.Root
+            bind:open={$dropdownStore.open}
+        >
+            <DropdownMenu.Trigger />
+            <DropdownMenu.Content side="left" align="start">
+                <DropdownMenu.Group>
+                    <DropdownMenu.Label>Options</DropdownMenu.Label>
+                    <DropdownMenu.Item
+                        on:click={() => { handleInsert("above"); }}
+                    >
+                        Insert above
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                        on:click={() => { handleInsert("below"); }}
+                    >
+                        Insert below
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                        on:click={() => { handleMove(0); }}
+                    >
+                        Move to top
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                        on:click={() => { handleMove(tracks.length); }}
+                    >
+                        Move to bottom
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
+                        on:click={() => { moveToIndexDialogOpen = true; }}
+                    >
+                        Move to index
+                    </DropdownMenu.Item>
+                </DropdownMenu.Group>
+            </DropdownMenu.Content>
+        </DropdownMenu.Root>
+    </div>
+{/if}
+
+<Dialog.Root bind:open={moveToIndexDialogOpen}>
+    <Dialog.Content>
+        <Dialog.Header>
+            <Dialog.Title>Move to index (0 - {tracks.length})</Dialog.Title>
+            <Dialog.Description>
+                <p
+                    class={`${moveToIndexWarning ? 'text-red-600' : ''} h-4`}
+                >
+                    {moveToIndexWarning ?? ''}
+                </p>
+            </Dialog.Description>
+        </Dialog.Header>
+        <div class="flex gap-2">
+            <Input
+                placeholder="Index"
+                id="indexSelect"
+                type="number"
+                min="0"
+                max="{tracks.length}"
+                bind:value={moveToIndexValue}
+            />
+            <Button
+                on:click={() => {
+                    handleMoveToIndex();
+                    if (!moveToIndexButtonDisabled) {
+                        moveToIndexDialogOpen = false;
+                    }
+                }}
+                class={`${moveToIndexButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+                Confirm
+            </Button>
+        </div>
+    </Dialog.Content>
+</Dialog.Root>
 
 <style>
     :global(.os-theme-dark) {

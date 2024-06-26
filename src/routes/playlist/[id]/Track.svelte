@@ -2,12 +2,13 @@
     import Icon from "$lib/components/Icon.svelte";
 
     import { Button } from "$lib/components/ui/button";
-    import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
     import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz';
+
+    import { dropdownStore } from "$lib/stores";
 
     import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
     import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
-    import { onMount, createEventDispatcher } from "svelte";
+    import { onMount } from "svelte";
     import { getTrackData, isTrackData } from './track-data';
 
     import type { TrackItem } from '$lib/api_types'
@@ -64,12 +65,13 @@
         )
     })
 
-    const dispatch = createEventDispatcher<{
-        insert: { side: 'above' | 'below', index: number }
-    }>();
-
-    function insert(side: 'above' | 'below') {
-        dispatch('insert', { side: side, index: index });
+    function handleOptionsClick(event: MouseEvent) {
+        const rect = (event.target as HTMLElement).getBoundingClientRect();
+        dropdownStore.set({
+            open: true,
+            position: { top: rect.bottom, left: rect.left },
+            index
+        })
     }
 
     let name = track.name;
@@ -96,31 +98,18 @@
     <div class="flex items-center text-sm overflow-hidden whitespace-nowrap overflow-ellipsis">
         {album.name}
     </div>
-    <DropdownMenu.Root>
-        <DropdownMenu.Trigger>
-            <div class="flex items-center">
-                <Button
-                    size="icon"
-                    variant="outline"
-                    class="h-8 w-8"
-                >
-                    <MaterialSymbolsMoreHoriz
-                        style="width: 2em; height: 2em;"
-                        class={`text-gray-700 hover:text-black`}
-                    />
-                </Button>
-            </div>
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Content
-            side="left"
-            align="start"
+    <div class="flex items-center">
+        <Button
+            size="icon"
+            variant="outline"
+            class="h-8 w-8"
+            on:click={handleOptionsClick}
         >
-            <DropdownMenu.Group>
-                <DropdownMenu.Label>Insert</DropdownMenu.Label>
-                    <DropdownMenu.Item on:click={() => insert('above')} > Insert above </DropdownMenu.Item>
-                    <DropdownMenu.Item on:click={() => insert('below')} > Insert below </DropdownMenu.Item>
-            </DropdownMenu.Group>
-        </DropdownMenu.Content>
-    </DropdownMenu.Root>
+            <MaterialSymbolsMoreHoriz
+                style="width: 2em; height: 2em;"
+                class={`text-gray-700 hover:text-black`}
+            />
+        </Button>
+    </div>
 </div>
 </div>
