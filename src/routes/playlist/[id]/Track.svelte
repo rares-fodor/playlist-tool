@@ -1,10 +1,6 @@
 <script lang="ts">
     import Icon from "$lib/components/Icon.svelte";
 
-    import { Button } from "$lib/components/ui/button";
-
-    import { dropdownStore } from "$lib/stores";
-
     import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
     import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
     import { onMount } from "svelte";
@@ -68,12 +64,15 @@
     let artists = track.artists;
     let album = track.album;
 
+    const durationDate = new Date(track.duration_ms);
+    let duration = `${durationDate.getMinutes()}:${durationDate.getSeconds()}`
+
     // Spotify states the url field is not nullable but some albums DO have missing album covers
     let imageUrl = album.images[0]?.url ?? `https://placehold.co/300?text=${album.name.at(0)}`;
 
 </script>
 
-<div bind:this={element} class={`grid grid-cols-[1fr_1fr] border-b border-b-gray-400 py-1 group ${stateStyles[state] ?? ''}`}>
+<div bind:this={element} class={`grid grid-cols-[1fr_1fr_3rem] border-b border-b-gray-400 py-1 group ${stateStyles[state] ?? ''}`}>
     <div class="flex min-w-0 items-center max-h-11 gap-2">
         <Icon size="medium" src={imageUrl}/>
         <div class="flex flex-col justify-center whitespace-nowrap overflow-hidden">
@@ -81,7 +80,10 @@
             <section class="overflow-hidden overflow-ellipsis text-sm/tight">{artists[0].name}</section>
         </div>
     </div>
-    <div class="flex items-center text-sm overflow-hidden whitespace-nowrap overflow-ellipsis">
-        {album.name}
+    <div class="flex items-center text-sm overflow-hidden">
+        <span class="whitespace-nowrap overflow-ellipsis overflow-hidden">{album.name}</span>
+    </div>
+    <div class="flex items-center text-sm">
+        <span>{duration}</span>
     </div>
 </div>

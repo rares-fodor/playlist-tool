@@ -256,7 +256,7 @@
 
 <div class="flex flex-col">
     <!-- Table header -->
-    <div class="grid grid-cols-[1fr_1fr_2.2rem_15px] border-b border-b-gray-400 py-1">
+    <div class="grid grid-cols-[1fr_1fr_3rem_2.2rem_15px] border-b border-b-gray-400 py-1">
     {#each sortableColumns as column}
         <button on:click={() => onColumnClicked(column)}>
             <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-10' : ''}`}> <!-- NOTE very hacky --->
