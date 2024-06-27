@@ -72,7 +72,10 @@
 
 </script>
 
-<div bind:this={element} class={`grid grid-cols-[1fr_1fr_3rem] border-b border-b-gray-400 py-1 group ${stateStyles[state] ?? ''}`}>
+<div bind:this={element} class={`grid grid-cols-[3rem_1fr_1fr_3rem] gap-3 py-1 group ${stateStyles[state] ?? ''}`}>
+    <div class="flex items-center justify-end">
+        <span>{index}</span>
+    </div>
     <div class="flex min-w-0 items-center max-h-11 gap-2">
         <Icon size="medium" src={imageUrl}/>
         <div class="flex flex-col justify-center whitespace-nowrap overflow-hidden">

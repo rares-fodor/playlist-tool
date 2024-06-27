@@ -256,10 +256,11 @@
 
 <div class="flex flex-col">
     <!-- Table header -->
-    <div class="grid grid-cols-[1fr_1fr_3rem_2.2rem_15px] border-b border-b-gray-400 py-1">
+    <div class="grid grid-cols-[3rem_1fr_1fr_3rem_2.2rem_15px] gap-3 border-b border-b-gray-400 py-1">
+    <span class="flex justify-end">#</span>
     {#each sortableColumns as column}
         <button on:click={() => onColumnClicked(column)}>
-            <div class={`flex items-center gap-1 ${column === "Title" ? 'pl-10' : ''}`}> <!-- NOTE very hacky --->
+            <div class={`flex items-center gap-1`}> <!-- NOTE very hacky --->
                 <span>{column}</span>
                 <div class="w-4 h-4">
                     {#if sortState.column === column}

@@ -9,8 +9,6 @@
     import { Input } from "$lib/components/ui/input";
     import { Button } from "$lib/components/ui/button";
 
-    import { dropdownStore } from "$lib/stores";
-
     import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz';
 
     import { onMount } from "svelte";
@@ -40,6 +38,11 @@
     })
 
     $: trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
+    $: {
+        if (tracks) {
+            trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
+        }
+    }
     $: {
         if (virtualItemElems.length) {
             virtualItemElems.forEach((elem) => $trackListVirtualizer.measureElement(elem));
@@ -230,7 +233,7 @@
         {#each trackListVirtualItems as virtItem (tracks[virtItem.index])}
             <div 
                 data-track-index={virtItem.index}
-                class="grid grid-cols-[1fr_2.2rem_15px]"
+                class="grid grid-cols-[1fr_2.2rem_15px] gap-3 hover:bg-gray-200 border-b border-b-gray-300"
             >
                 <Track
                     index={virtItem.index}
@@ -240,7 +243,7 @@
                 <DropdownMenu.Root>
                     <DropdownMenu.Trigger asChild let:builder>
                         <div 
-                            class="flex items-center relative border-b border-b-gray-400"
+                            class="flex items-center relative"
                         >
                             <Button
                                 size="icon"
