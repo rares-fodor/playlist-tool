@@ -242,22 +242,44 @@
                         <DropdownMenu.Group>
                             <DropdownMenu.Label>Options</DropdownMenu.Label>
                             <DropdownMenu.Item
-                                on:click={() => { handleInsert(virtItem.index, "above"); }}
+                                on:click={() => {
+                                    handleInsert(virtItem.index, "above");
+                                }}
                             >
                                 Insert above
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
-                                on:click={() => { handleInsert(virtItem.index, "below"); }}
+                                on:click={() => {
+                                    handleInsert(virtItem.index, "below");
+                                }}
                             >
                                 Insert below
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
-                                on:click={() => { handleMove(virtItem.index, 0); }}
+                                on:click={() => {
+                                    handleMove(virtItem.index, virtItem.index - 1);
+                                }}
+                            >
+                                Move up 
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                on:click={() => {
+                                    handleMove(virtItem.index, virtItem.index + 1);
+                                }}
+                            >
+                                Move down
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                on:click={() => {
+                                    handleMove(virtItem.index, 0);
+                                }}
                             >
                                 Move to top
                             </DropdownMenu.Item>
                             <DropdownMenu.Item
-                                on:click={() => { handleMove(virtItem.index, tracks.length); }}
+                                on:click={() => {
+                                    handleMove(virtItem.index, tracks.length);
+                                }}
                             >
                                 Move to bottom
                             </DropdownMenu.Item>
