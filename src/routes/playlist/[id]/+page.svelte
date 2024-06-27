@@ -3,13 +3,13 @@
     import Icon from '$lib/components/Icon.svelte';
     import * as Dialog from '$lib/components/ui/dialog';
     import * as AlertDialog from '$lib/components/ui/alert-dialog';
-    import * as Card from '$lib/components/ui/card';
     import { ScrollArea } from '$lib/components/ui/scroll-area';
     import MaterialSymbolsKeyboardArrowDown from '~icons/material-symbols/keyboard-arrow-down';
     import MaterialSymbolsKeyboardArrowUp from '~icons/material-symbols/keyboard-arrow-up';
     import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz'
     import MaterialSymbolsShuffle from '~icons/material-symbols/shuffle'
     import MaterialSymbolsCheckCircle from '~icons/material-symbols/check-circle'
+    import MaterialSymbolsNestClockFarsightAnalogOutline from '~icons/material-symbols/nest-clock-farsight-analog-outline'
 
     import type { PageData } from "./$types";
     import type { Playlist } from '$lib/api_types';
@@ -257,23 +257,26 @@
 <div class="flex flex-col">
     <!-- Table header -->
     <div class="grid grid-cols-[3rem_1fr_1fr_3rem_2.2rem_15px] gap-3 border-b border-b-gray-400 py-1">
-    <span class="flex justify-end">#</span>
-    {#each sortableColumns as column}
-        <button on:click={() => onColumnClicked(column)}>
-            <div class={`flex items-center gap-1`}> <!-- NOTE very hacky --->
-                <span>{column}</span>
-                <div class="w-4 h-4">
-                    {#if sortState.column === column}
-                        {#if sortState.direction === SortDirection.Ascending}
-                            <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
-                        {:else if sortState.direction === SortDirection.Descending}
-                            <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+        <span class="flex justify-end">#</span>
+        {#each sortableColumns as column}
+            <button on:click={() => onColumnClicked(column)}>
+                <div class={`flex items-center gap-1`}> <!-- NOTE very hacky --->
+                    <span>{column}</span>
+                    <div class="w-4 h-4">
+                        {#if sortState.column === column}
+                            {#if sortState.direction === SortDirection.Ascending}
+                                <MaterialSymbolsKeyboardArrowUp viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                            {:else if sortState.direction === SortDirection.Descending}
+                                <MaterialSymbolsKeyboardArrowDown viewBox="0 0 25 25" style="width: 1em; height: 1em;"/>
+                            {/if}
                         {/if}
-                    {/if}
+                    </div>
                 </div>
-            </div>
-        </button>
-    {/each}
+            </button>
+        {/each}
+        <div class="flex items-center justify-end">
+            <MaterialSymbolsNestClockFarsightAnalogOutline class="text-gray-900" style="width: 1rem; height: 1rem;"/>
+        </div>
     </div>
 
     <TrackList

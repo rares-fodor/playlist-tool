@@ -65,7 +65,14 @@
     let album = track.album;
 
     const durationDate = new Date(track.duration_ms);
-    let duration = `${durationDate.getMinutes()}:${durationDate.getSeconds()}`
+    const mins = durationDate.getMinutes();
+    const seconds = durationDate.getSeconds();
+    let duration;
+    if (seconds < 10) {
+        duration = `${mins}:0${seconds}`
+    } else {
+        duration = `${mins}:${seconds}`
+    }
 
     // Spotify states the url field is not nullable but some albums DO have missing album covers
     let imageUrl = album.images[0]?.url ?? `https://placehold.co/300?text=${album.name.at(0)}`;
@@ -86,7 +93,7 @@
     <div class="flex items-center text-sm overflow-hidden">
         <span class="whitespace-nowrap overflow-ellipsis overflow-hidden">{album.name}</span>
     </div>
-    <div class="flex items-center text-sm">
+    <div class="flex items-center text-sm justify-end">
         <span>{duration}</span>
     </div>
 </div>
