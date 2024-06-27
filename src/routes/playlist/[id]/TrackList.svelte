@@ -277,16 +277,22 @@
 </Dialog.Root>
 
 {#if $dropdownStore.open}
+    <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
     <div
-        class="absolute"
-        style="top: {$dropdownStore.position.top}px; left: {$dropdownStore
-            .position.left}px;"
+        class="flex items-start absolute"
+        style="top: {$dropdownStore.position.top}px; left: {$dropdownStore.position.left}px;"
     >
         <DropdownMenu.Root
             bind:open={$dropdownStore.open}
         >
-            <DropdownMenu.Trigger />
-            <DropdownMenu.Content side="left" align="start">
+            <DropdownMenu.Trigger asChild let:builder>
+                <div use:builder.action {...builder} />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content 
+                side="left" 
+                align="start"
+                alignOffset={-5}
+            >
                 <DropdownMenu.Group>
                     <DropdownMenu.Label>Options</DropdownMenu.Label>
                     <DropdownMenu.Item

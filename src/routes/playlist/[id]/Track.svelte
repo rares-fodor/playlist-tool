@@ -65,10 +65,11 @@
         )
     })
 
-    function handleOptionsClick(event: MouseEvent) {
-        const rect = (event.target as HTMLElement).getBoundingClientRect();
+    let buttonDivElement: HTMLElement;
+    function handleOptionsClick() {
+        const rect = buttonDivElement.getBoundingClientRect();
         dropdownStore.set({
-            open: true,
+            open: !$dropdownStore.open,
             position: { top: rect.bottom, left: rect.left },
             index
         })
@@ -98,7 +99,10 @@
     <div class="flex items-center text-sm overflow-hidden whitespace-nowrap overflow-ellipsis">
         {album.name}
     </div>
-    <div class="flex items-center">
+    <div 
+        bind:this={buttonDivElement}
+        class="flex items-center relative"
+    >
         <Button
             size="icon"
             variant="outline"
