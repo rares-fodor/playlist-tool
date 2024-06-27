@@ -2,7 +2,6 @@
     import Icon from "$lib/components/Icon.svelte";
 
     import { Button } from "$lib/components/ui/button";
-    import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz';
 
     import { dropdownStore } from "$lib/stores";
 
@@ -65,16 +64,6 @@
         )
     })
 
-    let buttonDivElement: HTMLElement;
-    function handleOptionsClick() {
-        const rect = buttonDivElement.getBoundingClientRect();
-        dropdownStore.set({
-            open: !$dropdownStore.open,
-            position: { top: rect.bottom, left: rect.left },
-            index
-        })
-    }
-
     let name = track.name;
     let artists = track.artists;
     let album = track.album;
@@ -84,11 +73,7 @@
 
 </script>
 
-<div
-    bind:this={element}
-    class="grid grid-cols-[1fr_15px]"
->
-<div class={`grid grid-cols-[1fr_1fr_2.2rem] border-b border-b-gray-400 py-1 group ${stateStyles[state] ?? ''}`}>
+<div bind:this={element} class={`grid grid-cols-[1fr_1fr] border-b border-b-gray-400 py-1 group ${stateStyles[state] ?? ''}`}>
     <div class="flex min-w-0 items-center max-h-11 gap-2">
         <Icon size="medium" src={imageUrl}/>
         <div class="flex flex-col justify-center whitespace-nowrap overflow-hidden">
@@ -99,21 +84,4 @@
     <div class="flex items-center text-sm overflow-hidden whitespace-nowrap overflow-ellipsis">
         {album.name}
     </div>
-    <div 
-        bind:this={buttonDivElement}
-        class="flex items-center relative"
-    >
-        <Button
-            size="icon"
-            variant="outline"
-            class="h-8 w-8"
-            on:click={handleOptionsClick}
-        >
-            <MaterialSymbolsMoreHoriz
-                style="width: 2em; height: 2em;"
-                class={`text-gray-700 hover:text-black`}
-            />
-        </Button>
-    </div>
-</div>
 </div>

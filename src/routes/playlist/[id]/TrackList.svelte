@@ -11,6 +11,8 @@
 
     import { dropdownStore } from "$lib/stores";
 
+    import MaterialSymbolsMoreHoriz from '~icons/material-symbols/more-horiz';
+
     import { onMount } from "svelte";
     import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter"
     import { createVirtualizer } from "@tanstack/svelte-virtual";
@@ -98,12 +100,14 @@
     let trackSelectDescription: string = ""; 
     let trackSelectTracks: PlaylistedTrack[] = tracks;
     let handleTrackSelect: (id: string) => void;
-    function handleInsert(side: 'above' | 'below') {
-        // Function won't be called unless dropdown is active and if dropdown is active we know index is set
-        let index = $dropdownStore.index as number;
+    function handleInsert(sourceIndex: number, side: 'above' | 'below') {
+        // Naming is confusing here
+        // sourceIndex is index at which command was requested
+        // originIndex is index from which to move
+        // targetIndex is index of selected track after move
 
         handleTrackSelect = (id: string) => {
-            let targetIndex = index;
+            let targetIndex = sourceIndex;
             let originIndex = tracks.findIndex(track => track.id === id)
             console.log(tracks.map(t => t.id))
             console.log(id, originIndex)
@@ -128,7 +132,7 @@
             trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
         }
 
-        const track = tracks[index].track
+        const track = tracks[sourceIndex].track
         trackSelectDescription = 
             `Selected track will be moved ${side} "${track.artists[0].name} - ${track.name}"`
 
@@ -172,6 +176,7 @@
             moveToIndexWarning = undefined
         }
     }
+    let moveToIndexSource: number
     function handleMoveToIndex() {
         let moveToIndexValueInt = parseInt(moveToIndexValue)
         if (Number.isNaN(moveToIndexValueInt)) {
@@ -183,15 +188,14 @@
             moveToIndexValueInt = 0;
         }
 
-        handleMove(moveToIndexValueInt)
+        handleMove(moveToIndexSource, moveToIndexValueInt)
     }
 
-    function handleMove(targetIndex: number) {
+    function handleMove(sourceIndex: number, targetIndex: number) {
         // Function won't be called unless dropdown is active and if dropdown is active we know index is set
-        let index = $dropdownStore.index as number;
 
-        const elem = tracks[index]
-        tracks.splice(index, 1)
+        const elem = tracks[sourceIndex]
+        tracks.splice(sourceIndex, 1)
         tracks.splice(targetIndex, 0, elem)
 
         setTimeout(() => {
@@ -224,11 +228,71 @@
         style="position: abosolute; top: 0; left: 0; width: 100%; transform: translateY({trackListVirtualItems[0] ? trackListVirtualItems[0].start : 0}px);"
     >
         {#each trackListVirtualItems as virtItem (tracks[virtItem.index])}
-            <div data-track-index={virtItem.index}>
+            <div 
+                data-track-index={virtItem.index}
+                class="grid grid-cols-[1fr_2.2rem_15px]"
+            >
                 <Track
                     index={virtItem.index}
                     track={tracks[virtItem.index].track}
                 />
+                <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
+                <DropdownMenu.Root>
+                    <DropdownMenu.Trigger asChild let:builder>
+                        <div 
+                            class="flex items-center relative border-b border-b-gray-400"
+                        >
+                            <Button
+                                size="icon"
+                                variant="outline"
+                                class="h-8 w-8"
+                                builders={[builder]}
+                            >
+                                <MaterialSymbolsMoreHoriz
+                                    style="width: 2em; height: 2em;"
+                                    class={`text-gray-700 hover:text-black`}
+                                />
+                            </Button>
+                        </div>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content 
+                        side="left" 
+                        align="start"
+                        alignOffset={-5}
+                    >
+                        <DropdownMenu.Group>
+                            <DropdownMenu.Label>Options</DropdownMenu.Label>
+                            <DropdownMenu.Item
+                                on:click={() => { handleInsert(virtItem.index, "above"); }}
+                            >
+                                Insert above
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                on:click={() => { handleInsert(virtItem.index, "below"); }}
+                            >
+                                Insert below
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                on:click={() => { handleMove(virtItem.index, 0); }}
+                            >
+                                Move to top
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                on:click={() => { handleMove(virtItem.index, tracks.length); }}
+                            >
+                                Move to bottom
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                                on:click={() => {
+                                    moveToIndexDialogOpen = true; 
+                                    moveToIndexSource = virtItem.index
+                                }}
+                            >
+                                Move to index
+                            </DropdownMenu.Item>
+                        </DropdownMenu.Group>
+                    </DropdownMenu.Content>
+                </DropdownMenu.Root>
             </div>
         {/each}
     </div>
@@ -275,56 +339,6 @@
         </OverlayScrollbarsComponent>
     </Dialog.Content>
 </Dialog.Root>
-
-{#if $dropdownStore.open}
-    <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
-    <div
-        class="flex items-start absolute"
-        style="top: {$dropdownStore.position.top}px; left: {$dropdownStore.position.left}px;"
-    >
-        <DropdownMenu.Root
-            bind:open={$dropdownStore.open}
-        >
-            <DropdownMenu.Trigger asChild let:builder>
-                <div use:builder.action {...builder} />
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content 
-                side="left" 
-                align="start"
-                alignOffset={-5}
-            >
-                <DropdownMenu.Group>
-                    <DropdownMenu.Label>Options</DropdownMenu.Label>
-                    <DropdownMenu.Item
-                        on:click={() => { handleInsert("above"); }}
-                    >
-                        Insert above
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                        on:click={() => { handleInsert("below"); }}
-                    >
-                        Insert below
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                        on:click={() => { handleMove(0); }}
-                    >
-                        Move to top
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                        on:click={() => { handleMove(tracks.length); }}
-                    >
-                        Move to bottom
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item
-                        on:click={() => { moveToIndexDialogOpen = true; }}
-                    >
-                        Move to index
-                    </DropdownMenu.Item>
-                </DropdownMenu.Group>
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>
-    </div>
-{/if}
 
 <Dialog.Root bind:open={moveToIndexDialogOpen}>
     <Dialog.Content>
