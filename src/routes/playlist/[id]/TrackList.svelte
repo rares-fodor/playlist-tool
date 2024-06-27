@@ -1,6 +1,5 @@
 <script lang="ts">
     import Track from "./Track.svelte";
-    import Icon from "$lib/components/Icon.svelte";
     import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
     import type { PlaylistedTrack } from "$lib/api_types";
 
@@ -20,6 +19,7 @@
     import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
     import { triggerPostMoveFlash } from "@atlaskit/pragmatic-drag-and-drop-flourish/trigger-post-move-flash"
     import type { Edge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/types/";
+    import TrackSelectDialog from "./TrackSelectDialog.svelte";
 
     export let tracks: PlaylistedTrack[];
 
@@ -99,9 +99,7 @@
     })
 
     let trackSelectDialogOpen = false;
-    let trackSelectSearchValue: string = "";
     let trackSelectDescription: string = ""; 
-    let trackSelectTracks: PlaylistedTrack[] = tracks;
     let handleTrackSelect: (id: string) => void;
     function handleInsert(sourceIndex: number, side: 'above' | 'below') {
         // Naming is confusing here
@@ -112,8 +110,6 @@
         handleTrackSelect = (id: string) => {
             let targetIndex = sourceIndex;
             let originIndex = tracks.findIndex(track => track.id === id)
-            console.log(tracks.map(t => t.id))
-            console.log(id, originIndex)
 
             if (side === "above" && originIndex < targetIndex) {
                 targetIndex--;
@@ -142,26 +138,6 @@
         trackSelectDialogOpen = true;
     }
 
-    let trackSelectScrollRef: OverlayScrollbarsComponent | undefined;
-    $: trackSelectVirtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
-        count: trackSelectTracks.length,
-        // @ts-ignore: Assign HTMLElement | undefined to HTMLDivElement | null
-        getScrollElement: () => trackSelectScrollRef?.osInstance()?.elements().viewport,
-        estimateSize: () => 45,
-        overscan: 5
-    })
-    $: trackSelectVirtualItems = $trackSelectVirtualizer.getVirtualItems();
-    $: {
-        if (trackSelectSearchValue === "") {
-            trackSelectTracks = tracks;
-        } else {
-            const searchValueNormalized = trackSelectSearchValue.toLocaleLowerCase().replace('/\s+g', '');
-            trackSelectTracks = tracks.filter(track => {
-                const trackNameNormalized = track.track.name.toLowerCase().replace('/s\+g', '');
-                return trackNameNormalized.includes(searchValueNormalized, 0)
-            })
-        }
-    }
 
     let moveToIndexValue: string;
     let moveToIndexWarning: string | undefined = undefined;
@@ -302,46 +278,12 @@
 </div>
 </OverlayScrollbarsComponent>
 
-<Dialog.Root bind:open={trackSelectDialogOpen}>
-    <Dialog.Content>
-        <Dialog.Header>
-            <Dialog.Title>Select a track</Dialog.Title>
-            <Dialog.Description>{trackSelectDescription}</Dialog.Description>
-            <Input
-                bind:value={trackSelectSearchValue}
-                type="search"
-                placeholder="Search track"
-            />
-        </Dialog.Header>
-        <OverlayScrollbarsComponent
-            bind:this={trackSelectScrollRef}
-            options={{
-                scrollbars: {
-                    theme: 'os-theme-dark',
-                }
-            }}
-            class="h-[350px]"
-        >
-            <div class="flex flex-col gap-1">
-                <div 
-                    style="position: relative; height: {$trackSelectVirtualizer.getTotalSize()}px; width: 100%"
-                >
-                    {#each trackSelectVirtualItems as virtItem}
-                        <button
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: {virtItem.size}px; transform: translateY({virtItem.start}px;"
-                            on:click={() => { handleTrackSelect?.(trackSelectTracks[virtItem.index].id); trackSelectDialogOpen = false }}
-                        >
-                            <div class="flex items-center gap-2 p-1">
-                                <Icon size="medium" src={trackSelectTracks[virtItem.index].track.album.images[0].url}/>
-                                <span>{trackSelectTracks[virtItem.index].track.name}</span>
-                            </div>
-                        </button>
-                    {/each}
-                </div>
-            </div>
-        </OverlayScrollbarsComponent>
-    </Dialog.Content>
-</Dialog.Root>
+<TrackSelectDialog
+    tracks={tracks}
+    description={trackSelectDescription}
+    bind:open={trackSelectDialogOpen} 
+    on:select={(event) => handleTrackSelect(event.detail.id)}
+/>
 
 <Dialog.Root bind:open={moveToIndexDialogOpen}>
     <Dialog.Content>
