@@ -1,6 +1,6 @@
 <script>
-    import '../app.css'
-    import 'overlayscrollbars/styles/overlayscrollbars.css'
+  import "../app.css";
+  import "overlayscrollbars/styles/overlayscrollbars.css";
 </script>
 
-<slot/>
+<slot />

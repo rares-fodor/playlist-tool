@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 
-export const db = new Database(":memory:");
+export const db = new Database("app.db");
 
 db.exec(`CREATE TABLE IF NOT EXISTS user (
     id TEXT NOT NULL PRIMARY KEY,
@@ -19,13 +19,13 @@ db.exec(`CREATE TABLE IF NOT EXISTS session (
 )`)
 
 export interface DatabaseUserAttributes {
-    id: string;             // Local identifier, not the spotify user_id
-    username: string;       // Spotify username
-    spotify_id: string;
+  id: string;             // Local identifier, not the spotify user_id
+  username: string;       // Spotify username
+  spotify_id: string;
 }
 
 export interface DatabaseSessionAttributes {
-    access_token: string;
-    refresh_token: string;
-    access_token_expires_at: string;
+  access_token: string;
+  refresh_token: string;
+  access_token_expires_at: string;
 }

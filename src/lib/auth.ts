@@ -11,37 +11,37 @@ export const spotify_auth = new Spotify(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
 
 const adapter = new BetterSqlite3Adapter(db, {
-    user: "user",
-    session: "session",
+  user: "user",
+  session: "session",
 });
 
 export const lucia = new Lucia(adapter, {
-    sessionCookie: {
-        attributes: {
-            secure: !dev,
-        }
-    },
-    getUserAttributes: (attributes) => {
-        return {
-            username: attributes.username,
-            spotify_id: attributes.spotify_id,
-        };
-    },
-    getSessionAttributes: (attributes) => {
-        return {
-            access_token: attributes.access_token,
-            refresh_token: attributes.refresh_token,
-            access_token_expires_at: attributes.access_token_expires_at,
-        };
+  sessionCookie: {
+    attributes: {
+      secure: !dev,
     }
+  },
+  getUserAttributes: (attributes) => {
+    return {
+      username: attributes.username,
+      spotify_id: attributes.spotify_id,
+    };
+  },
+  getSessionAttributes: (attributes) => {
+    return {
+      access_token: attributes.access_token,
+      refresh_token: attributes.refresh_token,
+      access_token_expires_at: attributes.access_token_expires_at,
+    };
+  }
 });
 
 
 declare module "lucia" {
-    interface Register {
-        Lucia: typeof lucia;
-        DatabaseUserAttributes: Omit<DatabaseUserAttributes, "id">;
-        DatabaseSessionAttributes: DatabaseSessionAttributes;
-    }
+  interface Register {
+    Lucia: typeof lucia;
+    DatabaseUserAttributes: Omit<DatabaseUserAttributes, "id">;
+    DatabaseSessionAttributes: DatabaseSessionAttributes;
+  }
 }
 

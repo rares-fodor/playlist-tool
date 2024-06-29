@@ -5,29 +5,29 @@ import type { APIError } from "$lib/api_types";
 
 
 export async function POST(event: RequestEvent): Promise<Response> {
-    const data = await event.request.json();
-    const url = `https://api.spotify.com/v1/playlists/${data.id}/tracks`;
+  const data = await event.request.json();
+  const url = `https://api.spotify.com/v1/playlists/${data.id}/tracks`;
 
-    const response = await fetch(url, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${event.locals.session?.access_token}`,
-        },
-        body: JSON.stringify({
-            uris: data.state,
-        })
-    });
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${event.locals.session?.access_token}`,
+    },
+    body: JSON.stringify({
+      uris: data.state,
+    })
+  });
 
-    if (response.status !== 200) {
-        const err = (await response.json() as APIError).error;
-        return json(err);
-    }
+  if (response.status !== 200) {
+    const err = (await response.json() as APIError).error;
+    return json(err);
+  }
 
-    const snapshot = await response.json();
-    console.log(snapshot);
+  const snapshot = await response.json();
+  console.log(snapshot);
 
-    return json({
-        message: "Ok"
-    });
+  return json({
+    message: "Ok"
+  });
 }
