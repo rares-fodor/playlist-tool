@@ -3,6 +3,7 @@ import { error } from "@sveltejs/kit";
 import type { APIError, Page, Playlist } from "$lib/api_types";
 import type { LayoutServerLoad } from "./$types";
 import type { Image } from "$lib/api_types";
+import { db, getUserPlaylistVisibility, setUserPlaylistVisibility } from "$lib/db";
 
 
 export const load: LayoutServerLoad = async (event) => {
@@ -37,11 +38,31 @@ export const load: LayoutServerLoad = async (event) => {
   let playlists: Playlist[] = pages.flatMap((page) => page.items)
 
   let placeholderIconUrl = "https://placehold.co/300x300?text="
-  playlists.map(playlist => { if (!playlist.images) { playlist.images = [{ url: `${placeholderIconUrl}${playlist.name[0]}`, height: 300, width: 300 } as Image] } })
+  playlists.map(playlist => { 
+    if (!playlist.images) {
+      playlist.images = [{ url: `${placeholderIconUrl}${playlist.name[0]}`, height: 300, width: 300 } as Image]
+    }
+  })
+
+  const playlistVisibility = getUserPlaylistVisibility(event.locals.user?.id!)
+  let unseenIds: string[] = []
+
+  // Set visbility
+  playlists.map(playlist => { 
+    let visibility = playlistVisibility.get(playlist.id);
+    if (visibility === undefined) {
+      playlist.visibility = true;
+      unseenIds = [...unseenIds, playlist.id]
+    } else {
+      playlist.visibility = visibility;
+    }
+  })
+
+  // Set new playlists' visibility to true
+  setUserPlaylistVisibility(event.locals.user?.id!, unseenIds, true);
 
   return {
     user: event.locals.user,
     playlists: playlists,
   }
 }
-
