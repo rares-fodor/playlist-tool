@@ -23,8 +23,8 @@
     $formData.ids = $formData.ids.filter((i) => i !== id)
   }
 
-  $: visiblePlaylists = data.playlists.filter(pl => pl.visibility)
-  $: hiddenPlaylists = data.playlists.filter(pl => !pl.visibility)
+  $: visiblePlaylists = data.playlists.filter(pl => pl.isVisible)
+  $: hiddenPlaylists = data.playlists.filter(pl => !pl.isVisible)
 
 </script>
 

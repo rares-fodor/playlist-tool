@@ -79,7 +79,7 @@
     return "Are you sure you want to commit these changes?";
   })();
 
-  const valid_targets = data.playlists.filter(canCommit);
+  const valid_targets = data.playlists.filter(canCommit).filter(pl => pl.isVisible);
 
   // Durstenfeld shuffle
   // Modifies data.tracks in place, triggers an update for the track list view and the URI array

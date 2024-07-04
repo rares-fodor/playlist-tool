@@ -21,7 +21,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS session (
 db.exec(`CREATE TABLE IF NOT EXISTS user_hidden_playlists (
   user_id TEXT NOT NULL,
   playlist_id TEXT NOT NULL,
-  visibility INTEGER NOT NULL,
+  isVisible INTEGER NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user(id),
   UNIQUE(user_id, playlist_id)
 )`)
@@ -78,8 +78,8 @@ export function toggleUserPlaylistVisibility(userId: string, playlistIds: string
   toggleMany(userId, playlistIds);
 }
 
-export function setUserPlaylistVisibility(userId: string, playlistIds: string[], visibility: boolean) {
-  let numericVisibility: number = visibility ? 1 : 0;
+export function setUserPlaylistVisibility(userId: string, playlistIds: string[], isVisible: boolean) {
+  let numericVisibility: number = isVisible ? 1 : 0;
   const stmt = db.prepare(
     `INSERT INTO user_hidden_playlists (user_id, playlist_id, visibility)
      VALUES (?, ?, ?)

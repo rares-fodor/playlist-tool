@@ -2,7 +2,7 @@ import type { PageServerLoad, Actions } from "./$types";
 import { fail, superValidate } from "sveltekit-superforms";
 import { formSchema } from "./schema";
 import { zod } from "sveltekit-superforms/adapters";
-import { setUserPlaylistVisibility, toggleUserPlaylistVisibility } from "$lib/db";
+import { toggleUserPlaylistVisibility } from "$lib/db";
 
 export const load: PageServerLoad = async () => {
   return {

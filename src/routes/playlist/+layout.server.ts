@@ -49,12 +49,12 @@ export const load: LayoutServerLoad = async (event) => {
 
   // Set visbility
   playlists.map(playlist => { 
-    let visibility = playlistVisibility.get(playlist.id);
-    if (visibility === undefined) {
-      playlist.visibility = true;
+    let isVisible = playlistVisibility.get(playlist.id);
+    if (isVisible === undefined) {
+      playlist.isVisible = true;
       unseenIds = [...unseenIds, playlist.id]
     } else {
-      playlist.visibility = visibility;
+      playlist.isVisible = isVisible;
     }
   })
 
