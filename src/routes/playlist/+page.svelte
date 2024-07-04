@@ -40,11 +40,6 @@
         {#each [visiblePlaylists, hiddenPlaylists] as playlists}
           {#if playlists === hiddenPlaylists && hiddenPlaylists.length > 0}
             <hr class="border-t border-t-gray-500">
-            <div class="text-sm text-gray-500 mt-1 text-right">HIDDEN PLAYLISTS</div>
-          {/if}
-          {#if playlists === visiblePlaylists && visiblePlaylists.length > 0}
-            <hr class="border-t border-t-gray-700">
-            <div class="text-sm text-gray-500 mt-1 text-right">PLAYLISTS</div>
           {/if}
           {#each playlists as playlist (playlist.id)}
             {@const checked = $formData.ids.includes(playlist.id)}

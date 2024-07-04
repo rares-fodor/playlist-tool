@@ -61,6 +61,10 @@ export const load: LayoutServerLoad = async (event) => {
   // Set new playlists' visibility to true
   setUserPlaylistVisibility(event.locals.user?.id!, unseenIds, true);
 
+  playlists.sort((a, b) => {
+    return a.name.localeCompare(b.name)
+  })
+
   return {
     user: event.locals.user,
     playlists: playlists,
