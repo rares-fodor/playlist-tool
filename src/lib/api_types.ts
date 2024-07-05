@@ -88,6 +88,7 @@ interface PlaylistBase {
 export interface Playlist<Item extends TrackItem = TrackItem> extends PlaylistBase {
   tracks: Page<PlaylistedTrack<Item>>
   isVisible: boolean // Whether the playlist shows up in the app
+  targetId?: string   // ID of target playlist
 }
 
 export interface PlaylistedTrack<Item extends TrackItem = TrackItem> {

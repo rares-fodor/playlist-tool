@@ -26,6 +26,14 @@ db.exec(`CREATE TABLE IF NOT EXISTS user_hidden_playlists (
   UNIQUE(user_id, playlist_id)
 )`)
 
+db.exec(`CREATE TABLE IF NOT EXISTS user_playlist_targets (
+  user_id TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user(id),
+  UNIQUE(user_id, source_id)
+)`)
+
 export interface DatabaseUserAttributes {
   id: string;             // Local identifier, not the spotify user_id
   username: string;       // Spotify username
@@ -42,6 +50,11 @@ export interface DatabaseUserHiddenPlaylist {
   user_id: string;
   playlist_id: string;
   visibility: number;
+}
+
+interface DatabasePlaylistTarget {
+  source_id: string;
+  target_id: string;
 }
 
 type PlaylistVisibility = Omit<DatabaseUserHiddenPlaylist, 'user_id'>;
@@ -95,4 +108,26 @@ export function setUserPlaylistVisibility(userId: string, playlistIds: string[],
   })
 
   insertMany(userId, playlistIds);
+}
+
+export function getUserPlaylistTargets(userId: string): Map<string, string> {
+  const stmt = db.prepare(`SELECT source_id, target_id FROM user_playlist_targets WHERE user_id = ?`);
+  const rows = stmt.all(userId) as DatabasePlaylistTarget[];
+
+  const result = new Map<string, string>() 
+  for (const row of rows) {
+    result.set(row.source_id, row.target_id);
+  }
+
+  return result;
+}
+
+export function setUserPlaylistTarget(userId: string, sourceId: string, targetId: string) {
+  const stmt = db.prepare(`
+    INSERT INTO user_playlist_targets (user_id, source_id, target_id)
+    VALUES (?, ?, ?)
+    ON CONFLICT(user_id, source_id) DO UPDATE SET target_id = excluded.target_id
+  `);
+
+  stmt.run(userId, sourceId, targetId);
 }

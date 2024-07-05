@@ -41,10 +41,3 @@ export const load: PageServerLoad = async (event) => {
     tracks: tracks
   }
 }
-
-export const actions: Actions = {
-  default: async (event) => {
-    let data = await event.request.formData();
-    console.log(data);
-  }
-}

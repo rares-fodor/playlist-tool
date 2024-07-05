@@ -42,8 +42,8 @@
   let user_order = [...data.tracks];
 
   // Playlist data
-  let current_playlist = data.playlists.find((e) => e.id === data.id)!;
-  let target_playlist: Playlist | undefined;
+  let current_playlist = data.playlists.find(e => e.id === data.id)!;
+  let target_playlist: Playlist | undefined = data.playlists.find(e => e.id === current_playlist.targetId);
 
   const playlistTooLarge = (playlist: Playlist) => {
     return playlist.tracks.total > 100;
@@ -104,8 +104,20 @@
         state: playlist_order.slice(0, 100),
       }),
     });
-    const reply = await response.json();
-    console.log(reply);
+    if (response.status === 200) {
+      fetch("/api/save_target", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceId: current_playlist.id,
+          targetId: target_playlist?.id ?? current_playlist.id,
+        }),
+      })
+      // Maintain consistent data without a page reload
+      const index = data.playlists.findIndex(p => p.id === current_playlist.id)
+      const item = data.playlists.at(index)!
+      item.targetId = target_playlist?.id;
+    }
   }
 
   function onTargetSelected(playlist: Playlist) {
@@ -114,10 +126,6 @@
       return;
     }
     target_playlist = playlist;
-  }
-
-  function onTargetRemoved() {
-    target_playlist = undefined;
   }
 
   function sortTracks(column: SortBy, direction: SortDirection) {

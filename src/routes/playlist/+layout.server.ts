@@ -3,7 +3,7 @@ import { error } from "@sveltejs/kit";
 import type { APIError, Page, Playlist } from "$lib/api_types";
 import type { LayoutServerLoad } from "./$types";
 import type { Image } from "$lib/api_types";
-import { db, getUserPlaylistVisibility, setUserPlaylistVisibility } from "$lib/db";
+import { db, getUserPlaylistTargets, getUserPlaylistVisibility, setUserPlaylistVisibility } from "$lib/db";
 
 
 export const load: LayoutServerLoad = async (event) => {
@@ -60,6 +60,12 @@ export const load: LayoutServerLoad = async (event) => {
 
   // Set new playlists' visibility to true
   setUserPlaylistVisibility(event.locals.user?.id!, unseenIds, true);
+
+  // Restore saved targets
+  const playlistTargets = getUserPlaylistTargets(event.locals.user?.id!);
+  playlists.map(playlist => {
+    playlist.targetId = playlistTargets.get(playlist.id);
+  })
 
   playlists.sort((a, b) => {
     return a.name.localeCompare(b.name)
