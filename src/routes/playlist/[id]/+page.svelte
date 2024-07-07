@@ -270,11 +270,14 @@
 <div class="flex flex-col">
   <!-- Table header -->
   <div
-    class="grid grid-cols-[3rem_1fr_1fr_3rem_2.2rem_15px] gap-3 border-b border-b-gray-400 py-1"
+    class="grid grid-cols-[3rem_1fr_2.2rem_15px] sm:grid-cols-[3rem_1fr_1fr_3rem_2.2rem_15px] gap-3 border-b border-b-gray-400 py-1"
   >
     <span class="flex justify-end">#</span>
     {#each sortableColumns as column}
-      <button on:click={() => onColumnClicked(column)}>
+      <button
+        on:click={() => onColumnClicked(column)}
+        class={column === "Album" ? "hidden sm:block" : ""}
+      >
         <div class={`flex items-center gap-1`}>
           <!-- NOTE very hacky --->
           <span>{column}</span>
@@ -296,7 +299,7 @@
         </div>
       </button>
     {/each}
-    <div class="flex items-center justify-end">
+    <div class="hidden sm:flex items-center justify-end">
       <MaterialSymbolsNestClockFarsightAnalogOutline
         class="text-gray-900"
         style="width: 1rem; height: 1rem;"

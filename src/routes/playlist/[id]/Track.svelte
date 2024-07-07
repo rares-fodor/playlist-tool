@@ -84,7 +84,7 @@
 
 <div
   bind:this={element}
-  class={`grid grid-cols-[3rem_1fr_1fr_3rem] gap-3 py-1 group ${stateStyles[state] ?? ""}`}
+  class={`grid grid-cols-[3rem_1fr] sm:grid-cols-[3rem_1fr_1fr_3rem] gap-3 py-1 group ${stateStyles[state] ?? ""}`}
 >
   <div class="flex items-center justify-end">
     <span>{index}</span>
@@ -100,12 +100,14 @@
       </section>
     </div>
   </div>
-  <div class="flex items-center text-sm overflow-hidden">
-    <span class="whitespace-nowrap overflow-ellipsis overflow-hidden"
-      >{album.name}</span
+  <div class="hidden sm:flex items-center text-sm overflow-hidden">
+    <span
+      class="whitespace-nowrap overflow-ellipsis overflow-hidden"
     >
+      {album.name}
+    </span>
   </div>
-  <div class="flex items-center text-sm justify-end">
+  <div class="hidden sm:flex items-center text-sm justify-end">
     <span>{duration}</span>
   </div>
 </div>
