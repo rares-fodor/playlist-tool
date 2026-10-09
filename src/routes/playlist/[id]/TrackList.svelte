@@ -37,6 +37,9 @@
   let listElem: HTMLDivElement;
   let osRef: OverlayScrollbarsComponent | undefined;
 
+  // Extra scroll space after the last row, for whatever the page floats over the list's bottom
+  export let bottomInset = 0;
+
   // Prevents reinitialization of virtualizer when tracks changes
   let count: number = tracks.length;
 
@@ -429,6 +432,16 @@
     announce(dissolved.size === 1 ? "Ungrouped 1 group" : `Ungrouped ${dissolved.size} groups`);
   }
 
+  export function clearGroups() {
+    const count = new Set(groups.values()).size;
+    if (count === 0) {
+      return;
+    }
+    groups = new Map();
+    dispatch("groupschange", { reordered: false });
+    announce(count === 1 ? "Cleared 1 group" : `Cleared ${count} groups`);
+  }
+
   // The track moves to just after its group, so the group never splits
   function removeFromGroup(index: number) {
     const track = tracks[index];
@@ -644,7 +657,7 @@
     on:contextmenu={onListContextMenu}
     on:focusin={onListFocusin}
     class="pl-3 focus-visible:outline-none [--ds-background-selected:hsl(var(--primary)/0.15)]"
-    style="position: relative; width: 100%; height: {$trackListVirtualizer.getTotalSize()}px;"
+    style="position: relative; width: 100%; height: {$trackListVirtualizer.getTotalSize() + bottomInset}px;"
   >
     <div
       style="position: abosolute; top: 0; left: 0; width: 100%; transform: translateY({trackListVirtualItems[0]

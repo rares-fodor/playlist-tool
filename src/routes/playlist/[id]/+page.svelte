@@ -187,6 +187,9 @@
   let canGroup = false;
   let canUngroup = false;
 
+  $: groupCount = new Set(groups.values()).size;
+  let clearGroupsDialogOpen = false;
+
   function onGroupsChange(event: CustomEvent<{ reordered: boolean }>) {
     if (event.detail.reordered) {
       adoptCurrentOrder();
@@ -351,7 +354,7 @@
 
   <!-- Toolbar -->
   <!-- -mr-3 pr-3: the border runs past the content on the right as far as the track list's gutter does on the left -->
-  <div class="relative -mr-3 mt-4 flex flex-wrap items-center gap-2 border-b pb-3 pr-3">
+  <div class="-mr-3 mt-4 flex flex-wrap items-center gap-2 border-b pb-3 pr-3">
     <!-- Same width as the cover above (Icon "large" is 6em of the 16px header text = 6rem) -->
     <Button variant="outline" on:click={shuffleHandler} class="w-24 gap-2 px-0">
       <MaterialSymbolsShuffle class="h-4 w-4" aria-hidden="true" />
@@ -383,53 +386,28 @@
           <MaterialSymbolsSwapVert class="mr-2 h-4 w-4" aria-hidden="true" />
           Reverse order
         </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item on:click={() => (clearGroupsDialogOpen = true)} disabled={groupCount === 0}>
+          <MaterialSymbolsLinkOff class="mr-2 h-4 w-4" aria-hidden="true" />
+          Clear all groups
+        </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
 
-    <!-- Centred on the toolbar content (on wide screens; the 0.375rem offsets its pr-3), not on the gap between its sides; h-10 matches the button row -->
-    <div class="flex justify-center md:absolute md:left-[calc(50%-0.375rem)] md:top-0 md:h-10 md:-translate-x-1/2 md:items-center">
-      {#if selectedCount >= 2}
-        <div
-          role="toolbar"
-          aria-label="Selection"
-          class="flex items-center gap-1 rounded-xl border bg-popover py-0.5 pl-4 pr-0.5 text-popover-foreground"
-        >
-          <span class="mr-2 text-sm text-muted-foreground">{selectedCount} selected</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            class="gap-2 rounded-lg"
-            disabled={!canGroup}
-            aria-keyshortcuts="G"
-            on:click={() => trackList.groupSelection()}
-          >
-            <MaterialSymbolsLink class="h-4 w-4" aria-hidden="true" />
-            Group
-          </Button>
-          {#if canUngroup}
-            <Button
-              variant="ghost"
-              size="sm"
-              class="gap-2 rounded-lg"
-              aria-keyshortcuts="Shift+G"
-              on:click={() => trackList.ungroupSelection()}
-            >
-              <MaterialSymbolsLinkOff class="h-4 w-4" aria-hidden="true" />
-              Ungroup
-            </Button>
-          {/if}
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-8 w-8 rounded-lg"
-            aria-label="Clear selection"
-            on:click={() => trackList.clearSelectionFromToolbar()}
-          >
-            <MaterialSymbolsClose class="h-4 w-4" aria-hidden="true" />
-          </Button>
-        </div>
-      {/if}
-    </div>
+    <AlertDialog.Root bind:open={clearGroupsDialogOpen}>
+      <AlertDialog.Content>
+        <AlertDialog.Header>
+          <AlertDialog.Title>Clear all groups?</AlertDialog.Title>
+          <AlertDialog.Description>
+            This ungroups {groupCount === 1 ? "1 group" : `all ${groupCount} groups`} in this playlist. The track order stays the same.
+          </AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+          <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+          <AlertDialog.Action on:click={() => trackList.clearGroups()}>Clear groups</AlertDialog.Action>
+        </AlertDialog.Footer>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
 
     <div class="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
       <TargetPickerDialog
@@ -521,7 +499,7 @@
     </div>
   </div>
 
-  <div class="min-h-0 flex-1 border-b">
+  <div class="relative min-h-0 flex-1 border-b">
     <TrackList
       bind:this={trackList}
       bind:tracks={data.tracks}
@@ -531,6 +509,51 @@
       bind:groups
       on:move={adoptCurrentOrder}
       on:groupschange={onGroupsChange}
+      bottomInset={selectedCount >= 2 ? 56 : 0}
     />
+    <!-- Floats over the bottom of the track list, which leaves room to scroll its last rows clear of it -->
+    <div class="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center px-3">
+      {#if selectedCount >= 2}
+        <div
+          role="toolbar"
+          aria-label="Selection"
+          class="pointer-events-auto flex items-center gap-1 rounded-md border bg-popover p-0.5 pl-4 text-popover-foreground shadow-md"
+        >
+          <span class="mr-2 text-sm text-muted-foreground">{selectedCount} selected</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="gap-2"
+            disabled={!canGroup}
+            aria-keyshortcuts="G"
+            on:click={() => trackList.groupSelection()}
+          >
+            <MaterialSymbolsLink class="h-4 w-4" aria-hidden="true" />
+            Group
+          </Button>
+          {#if canUngroup}
+            <Button
+              variant="ghost"
+              size="sm"
+              class="gap-2"
+              aria-keyshortcuts="Shift+G"
+              on:click={() => trackList.ungroupSelection()}
+            >
+              <MaterialSymbolsLinkOff class="h-4 w-4" aria-hidden="true" />
+              Ungroup
+            </Button>
+          {/if}
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-8 w-8"
+            aria-label="Clear selection"
+            on:click={() => trackList.clearSelectionFromToolbar()}
+          >
+            <MaterialSymbolsClose class="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
