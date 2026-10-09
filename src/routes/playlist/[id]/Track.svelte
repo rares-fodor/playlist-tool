@@ -21,6 +21,12 @@
   export let track: TrackItem;
   export let index: number;
   export let selected: boolean;
+  // Index range of the block (group, or just this track) the row belongs to
+  export let blockStart: number;
+  export let blockEnd: number;
+
+  // TrackList draws drag feedback for groups, which spans rows
+  $: grouped = blockStart !== blockEnd;
 
   let element: HTMLElement;
 
@@ -43,10 +49,11 @@
       dropTargetForElements({
         element,
         canDrop({ source }) {
-          if (source.element === element) {
+          if (source.element === element || !isTrackData(source.data)) {
             return false;
           }
-          return isTrackData(source.data);
+          // Not onto the dragged track's own group
+          return source.data.trackIndex < blockStart || source.data.trackIndex > blockEnd;
         },
         getData: () => {
           return getTrackData(index);
@@ -96,10 +103,10 @@
   bind:this={element}
   class={`grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_1fr_3rem] gap-3 py-1 group cursor-grab active:cursor-grabbing ${stateStyles[state] ?? ""}`}
 >
-  {#if state === "is-dragging-over"}
+  {#if state === "is-dragging-over" && !grouped}
     <div class="pointer-events-none absolute inset-0 bg-primary/5" aria-hidden="true"></div>
   {/if}
-  {#if state === "is-dragging-over" && dropEdge}
+  {#if state === "is-dragging-over" && dropEdge && !grouped}
     <div
       class="pointer-events-none absolute inset-x-0 z-10 h-0.5 bg-primary {dropEdge === 'top' ? '-top-px' : '-bottom-px'}"
       aria-hidden="true"

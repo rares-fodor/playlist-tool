@@ -30,6 +30,8 @@
         { keys: [["Shift", "↑"], ["Shift", "↓"]], action: "Extend selection" },
         { keys: [["Ctrl", "Click"]], action: "Select / deselect track" },
         { keys: [["Shift", "Click"]], action: "Select range" },
+        { keys: [["G"]], action: "Group selected tracks" },
+        { keys: [["Shift", "G"]], action: "Ungroup selected tracks" },
         { keys: [["Enter"], ["Shift", "F10"]], action: "Track options" },
         { keys: [["Esc"]], action: "Clear selection / close menu" },
       ],
