@@ -21,7 +21,7 @@ export const load: LayoutServerLoad = async (event) => {
       avatarUrl = (sorted.find((image) => (image.width ?? 0) >= 64) ?? sorted.at(-1))?.url ?? null;
     }
   } catch {
-    // The navbar falls back to the user's initial
+    // The user menu falls back to the user's initial
   }
 
   return { user, avatarUrl };
