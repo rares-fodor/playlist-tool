@@ -34,6 +34,17 @@ db.exec(`CREATE TABLE IF NOT EXISTS user_playlist_targets (
   UNIQUE(user_id, source_id)
 )`)
 
+db.exec(`CREATE TABLE IF NOT EXISTS user_track_groups (
+  user_id TEXT NOT NULL,
+  playlist_id TEXT NOT NULL,
+  group_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  track_uri TEXT NOT NULL,
+  occurrence INTEGER NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user(id),
+  UNIQUE(user_id, playlist_id, track_uri, occurrence)
+)`)
+
 export interface DatabaseUserAttributes {
   id: string;             // Local identifier, not the spotify user_id
   username: string;       // Spotify username
@@ -109,4 +120,62 @@ export function setUserPlaylistTarget(userId: string, sourceId: string, targetId
   `);
 
   stmt.run(userId, sourceId, targetId);
+}
+
+export interface TrackGroupMember {
+  uri: string;
+  // Which occurrence of the URI in the playlist's Spotify order (playlists may hold duplicates)
+  occurrence: number;
+}
+
+export interface TrackGroup {
+  id: string;
+  members: TrackGroupMember[];   // In group order
+}
+
+interface DatabaseTrackGroupRow {
+  group_id: string;
+  track_uri: string;
+  occurrence: number;
+}
+
+export function getUserTrackGroups(userId: string, playlistId: string): TrackGroup[] {
+  const stmt = db.prepare(`
+    SELECT group_id, track_uri, occurrence FROM user_track_groups
+    WHERE user_id = ? AND playlist_id = ?
+    ORDER BY group_id, position
+  `);
+  const rows = stmt.all(userId, playlistId) as DatabaseTrackGroupRow[];
+
+  const result = new Map<string, TrackGroup>();
+  for (const row of rows) {
+    let group = result.get(row.group_id);
+    if (!group) {
+      group = { id: row.group_id, members: [] };
+      result.set(row.group_id, group);
+    }
+    group.members.push({ uri: row.track_uri, occurrence: row.occurrence });
+  }
+
+  return [...result.values()];
+}
+
+// Replaces every saved group of the playlist
+export function setUserTrackGroups(userId: string, playlistId: string, groups: TrackGroup[]) {
+  const deleteStmt = db.prepare(`DELETE FROM user_track_groups WHERE user_id = ? AND playlist_id = ?`);
+  const insertStmt = db.prepare(`
+    INSERT INTO user_track_groups (user_id, playlist_id, group_id, position, track_uri, occurrence)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+
+  const replaceAll = db.transaction(() => {
+    deleteStmt.run(userId, playlistId);
+    for (const group of groups) {
+      group.members.forEach((member, position) => {
+        insertStmt.run(userId, playlistId, group.id, position, member.uri, member.occurrence);
+      });
+    }
+  });
+
+  replaceAll();
 }

@@ -9,6 +9,14 @@
   import { Button } from "$lib/components/ui/button";
   import { toast } from "svelte-sonner";
   import { beforeNavigate } from "$app/navigation";
+  import { onMount } from "svelte";
+  import {
+    loadIndex,
+    pullTogether,
+    serializeGroups,
+    toBlocks,
+    type GroupMap,
+  } from "$lib/track-groups";
   import MaterialSymbolsArrowBack from "~icons/material-symbols/arrow-back";
   import MaterialSymbolsKeyboardArrowDown from "~icons/material-symbols/keyboard-arrow-down";
   import MaterialSymbolsKeyboardArrowUp from "~icons/material-symbols/keyboard-arrow-up";
@@ -16,6 +24,9 @@
   import MaterialSymbolsShuffle from "~icons/material-symbols/shuffle";
   import MaterialSymbolsRestartAlt from "~icons/material-symbols/restart-alt";
   import MaterialSymbolsSwapVert from "~icons/material-symbols/swap-vert";
+  import MaterialSymbolsClose from "~icons/material-symbols/close";
+  import MaterialSymbolsLink from "~icons/material-symbols/link";
+  import MaterialSymbolsLinkOff from "~icons/material-symbols/link-off";
   import MaterialSymbolsNestClockFarsightAnalogOutline from "~icons/material-symbols/nest-clock-farsight-analog-outline";
 
   import type { PageData } from "./$types";
@@ -47,8 +58,13 @@
   // Manual sort order, saved when sorting by table header (title/album)
   let user_order = [...data.tracks];
 
-  // Order the page was loaded with, for "Reset to original order"
+  // Track groups, by synthetic track id. Saved as soon as they change, independent of commit.
+  let groups: GroupMap = new Map(data.groups);
+
+  // Order the page was loaded with (groups already pulled together), for "Reset to original order"
   const loaded_order = [...data.tracks];
+  // Order of the playlist on Spotify, which saved group members are identified against
+  let spotify_order = [...data.tracks].sort((a, b) => loadIndex(a) - loadIndex(b));
   // Order last known to be on Spotify; the editor is dirty when the current order differs
   let committed_ids = data.tracks.map((t) => t.id);
 
@@ -56,9 +72,11 @@
     tracks.length === ids.length && tracks.every((t, i) => t.id === ids[i]);
 
   $: isDirty = !sameOrder(data.tracks, committed_ids);
+  // Groups made since loading pull together in the original order too
+  $: resetOrder = pullTogether(loaded_order, groups);
   $: isLoadedOrder = sameOrder(
     data.tracks,
-    loaded_order.map((t) => t.id),
+    resetOrder.map((t) => t.id),
   );
 
   // Playlist data
@@ -111,26 +129,69 @@
     }
   }
 
-  // Durstenfeld shuffle
-  // Modifies data.tracks in place, triggers an update for the track list view and the URI array
+  // Durstenfeld shuffle, of blocks so groups stay together and in order
   function shuffleHandler() {
     adoptCurrentOrder();
-    for (let i = data.tracks.length - 1; i > 0; i--) {
+    const blocks = toBlocks(data.tracks, groups);
+    for (let i = blocks.length - 1; i > 0; i--) {
       let j = Math.floor(Math.random() * (i + 1));
-      let aux = data.tracks[i];
-      data.tracks[i] = data.tracks[j];
-      data.tracks[j] = aux;
+      let aux = blocks[i];
+      blocks[i] = blocks[j];
+      blocks[j] = aux;
     }
+    data.tracks = blocks.flat();
   }
 
   function reverseHandler() {
     adoptCurrentOrder();
-    data.tracks = [...data.tracks].reverse();
+    data.tracks = toBlocks(data.tracks, groups).reverse().flat();
   }
 
   function resetHandler() {
     adoptCurrentOrder();
-    data.tracks = [...loaded_order];
+    data.tracks = [...resetOrder];
+  }
+
+  onMount(() => {
+    if (data.dissolvedGroups > 0) {
+      const count = data.dissolvedGroups === 1 ? "1 group" : `${data.dissolvedGroups} groups`;
+      toast.info(`${count} dissolved`, {
+        description: "Tracks in it are no longer in the playlist.",
+      });
+    }
+  });
+
+  async function saveGroups() {
+    try {
+      const response = await fetch("/api/save_groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playlistId: current_playlist.id,
+          groups: serializeGroups(data.tracks, groups, spotify_order),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error();
+      }
+    } catch {
+      toast.error("Couldn't save groups", {
+        description: "They'll be lost when you leave this page.",
+      });
+    }
+  }
+
+  // Selection state and group actions live in the track list; the toolbar here drives them
+  let trackList: TrackList;
+  let selectedCount = 0;
+  let canGroup = false;
+  let canUngroup = false;
+
+  function onGroupsChange(event: CustomEvent<{ reordered: boolean }>) {
+    if (event.detail.reordered) {
+      adoptCurrentOrder();
+    }
+    saveGroups();
   }
 
   let commitDialogOpen = false;
@@ -173,6 +234,13 @@
       // Maintain consistent data without a page reload
       current_playlist.targetId = target.id;
       committed_ids = data.tracks.map((t) => t.id);
+      // Saved groups identify duplicate tracks by their Spotify order, which just changed
+      if (target.id === current_playlist.id) {
+        spotify_order = [...data.tracks];
+        if (groups.size > 0) {
+          saveGroups();
+        }
+      }
 
       toast.success(`Committed ${playlist_order.length} tracks to "${target.name}"`);
     } catch {
@@ -199,17 +267,20 @@
     }
   });
 
+  // Groups sort as blocks, keyed by their first track
   function sortTracks(column: SortBy, direction: SortDirection) {
+    const blocks = toBlocks(data.tracks, groups);
     if (column === "Title") {
-      data.tracks = data.tracks.sort(
-        (a, b) => direction * a.track.name.localeCompare(b.track.name),
+      blocks.sort(
+        (a, b) => direction * a[0].track.name.localeCompare(b[0].track.name),
       );
     } else if (column === "Album") {
-      data.tracks = data.tracks.sort(
+      blocks.sort(
         (a, b) =>
-          direction * a.track.album.name.localeCompare(b.track.album.name),
+          direction * a[0].track.album.name.localeCompare(b[0].track.album.name),
       );
     }
+    data.tracks = blocks.flat();
   }
 
   function onColumnClicked(column: SortBy) {
@@ -250,7 +321,8 @@
 <!-- Fill the viewport so the track list scrolls on its own -->
 <div class="flex h-dvh flex-col py-6">
   <div class="mb-4 flex items-center gap-4">
-    <Button href="/playlist" variant="ghost" class="-ml-3 gap-1 text-muted-foreground">
+    <!-- Same left edge and width as the cover below, so the hover background lines up with it -->
+    <Button href="/playlist" variant="ghost" class="w-24 gap-1 px-0 text-muted-foreground">
       <MaterialSymbolsArrowBack class="h-4 w-4" aria-hidden="true" />
       Playlists
     </Button>
@@ -278,8 +350,10 @@
   </div>
 
   <!-- Toolbar -->
-  <div class="mt-4 flex flex-wrap items-center gap-2 border-b pb-3">
-    <Button variant="outline" on:click={shuffleHandler} class="gap-2">
+  <!-- -mr-3 pr-3: the border runs past the content on the right as far as the track list's gutter does on the left -->
+  <div class="relative -mr-3 mt-4 flex flex-wrap items-center gap-2 border-b pb-3 pr-3">
+    <!-- Same width as the cover above (Icon "large" is 6em of the 16px header text = 6rem) -->
+    <Button variant="outline" on:click={shuffleHandler} class="w-24 gap-2 px-0">
       <MaterialSymbolsShuffle class="h-4 w-4" aria-hidden="true" />
       Shuffle
     </Button>
@@ -311,6 +385,51 @@
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
+
+    <!-- Centred on the toolbar content (on wide screens; the 0.375rem offsets its pr-3), not on the gap between its sides; h-10 matches the button row -->
+    <div class="flex justify-center md:absolute md:left-[calc(50%-0.375rem)] md:top-0 md:h-10 md:-translate-x-1/2 md:items-center">
+      {#if selectedCount >= 2}
+        <div
+          role="toolbar"
+          aria-label="Selection"
+          class="flex items-center gap-1 rounded-xl border bg-popover py-0.5 pl-4 pr-0.5 text-popover-foreground"
+        >
+          <span class="mr-2 text-sm text-muted-foreground">{selectedCount} selected</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            class="gap-2 rounded-lg"
+            disabled={!canGroup}
+            aria-keyshortcuts="G"
+            on:click={() => trackList.groupSelection()}
+          >
+            <MaterialSymbolsLink class="h-4 w-4" aria-hidden="true" />
+            Group
+          </Button>
+          {#if canUngroup}
+            <Button
+              variant="ghost"
+              size="sm"
+              class="gap-2 rounded-lg"
+              aria-keyshortcuts="Shift+G"
+              on:click={() => trackList.ungroupSelection()}
+            >
+              <MaterialSymbolsLinkOff class="h-4 w-4" aria-hidden="true" />
+              Ungroup
+            </Button>
+          {/if}
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-8 w-8 rounded-lg"
+            aria-label="Clear selection"
+            on:click={() => trackList.clearSelectionFromToolbar()}
+          >
+            <MaterialSymbolsClose class="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </div>
+      {/if}
+    </div>
 
     <div class="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
       <TargetPickerDialog
@@ -374,7 +493,7 @@
 
   <!-- Table header -->
   <div
-    class="grid grid-cols-[3.5rem_1fr_2.2rem_15px] gap-3 border-b py-2 text-sm text-muted-foreground sm:grid-cols-[3.5rem_1fr_1fr_3rem_2.2rem_15px]"
+    class="-mr-3 grid grid-cols-[3.5rem_1fr_2.2rem_15px] gap-3 pl-3 pr-3 border-b py-2 text-sm text-muted-foreground sm:grid-cols-[3.5rem_1fr_1fr_3rem_2.2rem_15px]"
   >
     <span class="flex justify-end">#</span>
     {#each sortableColumns as column}
@@ -403,6 +522,15 @@
   </div>
 
   <div class="min-h-0 flex-1 border-b">
-    <TrackList bind:tracks={data.tracks} on:move={adoptCurrentOrder} />
+    <TrackList
+      bind:this={trackList}
+      bind:tracks={data.tracks}
+      bind:selectedCount
+      bind:canGroup
+      bind:canUngroup
+      bind:groups
+      on:move={adoptCurrentOrder}
+      on:groupschange={onGroupsChange}
+    />
   </div>
 </div>
