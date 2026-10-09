@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from "$lib/components/Icon.svelte";
+  import MaterialSymbolsDragIndicator from "~icons/material-symbols/drag-indicator";
 
   import {
     draggable,
@@ -15,7 +16,7 @@
 
   const stateStyles: { [Key in DragState]?: string } = {
     "is-dragging": "opacity-40",
-    "is-dragging-over": "bg-accent",
+    "is-dragging-over": "bg-primary/5",
   };
 
   export let track: TrackItem;
@@ -24,6 +25,8 @@
   let element: HTMLElement;
 
   let state: DragState = "idle";
+  // Visual only: mirrors the edge TrackList's onDrop infers from the drag direction
+  let dropEdge: "top" | "bottom" | undefined;
 
   onMount(() => {
     return combine(
@@ -46,18 +49,23 @@
         getData: () => {
           return getTrackData(index);
         },
-        onDragEnter: () => {
+        onDragEnter: ({ source }) => {
           if (state !== "is-dragging") {
             state = "is-dragging-over";
+            if (isTrackData(source.data)) {
+              dropEdge = source.data.trackIndex > index ? "top" : "bottom";
+            }
           }
         },
         onDragLeave: () => {
           if (state !== "is-dragging") {
             state = "idle";
+            dropEdge = undefined;
           }
         },
         onDrop: () => {
           state = "idle";
+          dropEdge = undefined;
         },
       }),
     );
@@ -84,9 +92,19 @@
 
 <div
   bind:this={element}
-  class={`grid grid-cols-[3rem_1fr] sm:grid-cols-[3rem_1fr_1fr_3rem] gap-3 py-1 group ${stateStyles[state] ?? ""}`}
+  class={`relative grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_1fr_3rem] gap-3 py-1 group cursor-grab active:cursor-grabbing ${stateStyles[state] ?? ""}`}
 >
-  <div class="flex items-center justify-end">
+  {#if state === "is-dragging-over" && dropEdge}
+    <div
+      class="pointer-events-none absolute inset-x-0 z-10 h-0.5 bg-primary {dropEdge === 'top' ? '-top-px' : '-bottom-px'}"
+      aria-hidden="true"
+    ></div>
+  {/if}
+  <div class="flex items-center justify-end gap-1 text-sm tabular-nums text-muted-foreground">
+    <MaterialSymbolsDragIndicator
+      class="h-4 w-4 shrink-0 opacity-40 transition-opacity group-hover:opacity-100"
+      aria-hidden="true"
+    />
     <span>{index}</span>
   </div>
   <div class="flex min-w-0 items-center max-h-11 gap-2">
@@ -95,19 +113,19 @@
       <section class="overflow-hidden overflow-ellipsis text-base/tight">
         {name}
       </section>
-      <section class="overflow-hidden overflow-ellipsis text-sm/tight">
+      <section class="overflow-hidden overflow-ellipsis text-sm/tight text-muted-foreground">
         {artists[0].name}
       </section>
     </div>
   </div>
-  <div class="hidden sm:flex items-center text-sm overflow-hidden">
+  <div class="hidden sm:flex items-center text-sm text-muted-foreground overflow-hidden">
     <span
       class="whitespace-nowrap overflow-ellipsis overflow-hidden"
     >
       {album.name}
     </span>
   </div>
-  <div class="hidden sm:flex items-center text-sm justify-end">
+  <div class="hidden sm:flex items-center text-sm tabular-nums text-muted-foreground justify-end">
     <span>{duration}</span>
   </div>
 </div>

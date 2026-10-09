@@ -1,19 +1,23 @@
 <script lang="ts">
   import TrackList from "./TrackList.svelte";
+  import TargetPickerDialog from "./TargetPickerDialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
-  import * as Dialog from "$lib/components/ui/dialog";
   import * as AlertDialog from "$lib/components/ui/alert-dialog";
-  import { ScrollArea } from "$lib/components/ui/scroll-area";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import * as Tooltip from "$lib/components/ui/tooltip";
+  import { Button } from "$lib/components/ui/button";
+  import { toast } from "svelte-sonner";
+  import { beforeNavigate } from "$app/navigation";
   import MaterialSymbolsKeyboardArrowDown from "~icons/material-symbols/keyboard-arrow-down";
   import MaterialSymbolsKeyboardArrowUp from "~icons/material-symbols/keyboard-arrow-up";
   import MaterialSymbolsMoreHoriz from "~icons/material-symbols/more-horiz";
   import MaterialSymbolsShuffle from "~icons/material-symbols/shuffle";
-  import MaterialSymbolsCheckCircle from "~icons/material-symbols/check-circle";
+  import MaterialSymbolsRestartAlt from "~icons/material-symbols/restart-alt";
+  import MaterialSymbolsSwapVert from "~icons/material-symbols/swap-vert";
   import MaterialSymbolsNestClockFarsightAnalogOutline from "~icons/material-symbols/nest-clock-farsight-analog-outline";
 
   import type { PageData } from "./$types";
-  import type { Playlist } from "$lib/api_types";
-  import Button from "$lib/components/ui/button/button.svelte";
+  import type { Playlist, PlaylistedTrack } from "$lib/api_types";
 
   export let data: PageData;
 
@@ -41,9 +45,22 @@
   // Manual sort order, saved when sorting by table header (title/album)
   let user_order = [...data.tracks];
 
+  // Order the page was loaded with, for "Reset to original order"
+  const loaded_order = [...data.tracks];
+  // Order last known to be on Spotify; the editor is dirty when the current order differs
+  let committed_ids = data.tracks.map((t) => t.id);
+
+  const sameOrder = (tracks: PlaylistedTrack[], ids: string[]) =>
+    tracks.length === ids.length && tracks.every((t, i) => t.id === ids[i]);
+
+  $: isDirty = !sameOrder(data.tracks, committed_ids);
+  $: isLoadedOrder = sameOrder(
+    data.tracks,
+    loaded_order.map((t) => t.id),
+  );
+
   // Playlist data
   let current_playlist = data.playlists.find(e => e.id === data.id)!;
-  let target_playlist: Playlist | undefined = data.playlists.find(e => e.id === current_playlist.targetId);
 
   const playlistTooLarge = (playlist: Playlist) => {
     return playlist.tracks.total > 100;
@@ -63,27 +80,39 @@
     );
   };
 
-  $: isCommitDisabled =
-    !canCommit(current_playlist) && target_playlist === undefined;
-  $: commitDialogText = (() => {
-    if (isCommitDisabled) {
-      if (playlistNotOnwned(current_playlist)) {
-        return "Cannot commit changes, you are not the playlist owner!";
-      } else if (playlistTooLarge(current_playlist)) {
-        return "This playlist is too long (> 100 tracks) to commit to, choose a target instead!";
-      } else if (playlistCollaborative(current_playlist)) {
-        return "Cannot commit changes, this playlist is collaborative!";
-      }
-      return "Cannot commit changes!";
+  const valid_targets = data.playlists.filter(canCommit).filter(pl => pl.isVisible);
+
+  // Saved target if it's still valid, otherwise the playlist itself when possible
+  let target_playlist: Playlist | undefined =
+    valid_targets.find((e) => e.id === current_playlist.targetId) ??
+    (canCommit(current_playlist) ? current_playlist : undefined);
+
+  $: commitDisabledReason = (() => {
+    if (target_playlist !== undefined) {
+      return undefined;
     }
-    return "Are you sure you want to commit these changes?";
+    if (playlistNotOnwned(current_playlist)) {
+      return "You don't own this playlist. Choose a target playlist to commit to.";
+    } else if (playlistTooLarge(current_playlist)) {
+      return "This playlist has more than 100 tracks. Choose a target playlist to commit to.";
+    } else if (playlistCollaborative(current_playlist)) {
+      return "Collaborative playlists can't be committed to. Choose a target playlist.";
+    }
+    return "Choose a target playlist to commit to.";
   })();
 
-  const valid_targets = data.playlists.filter(canCommit).filter(pl => pl.isVisible);
+  // A manual reorder while sorted by a column adopts the sorted order as the custom order,
+  // so cycling the sort back to "none" doesn't discard the move
+  function adoptCurrentOrder() {
+    if (sortState.column !== "Custom") {
+      sortState = { column: "Custom", direction: SortDirection.None };
+    }
+  }
 
   // Durstenfeld shuffle
   // Modifies data.tracks in place, triggers an update for the track list view and the URI array
   function shuffleHandler() {
+    adoptCurrentOrder();
     for (let i = data.tracks.length - 1; i > 0; i--) {
       let j = Math.floor(Math.random() * (i + 1));
       let aux = data.tracks[i];
@@ -92,41 +121,81 @@
     }
   }
 
+  function reverseHandler() {
+    adoptCurrentOrder();
+    data.tracks = [...data.tracks].reverse();
+  }
+
+  function resetHandler() {
+    adoptCurrentOrder();
+    data.tracks = [...loaded_order];
+  }
+
+  let commitDialogOpen = false;
+  let committing = false;
+
   // Send URI array to back-end to be commited to Spotify
   async function commit() {
-    let playlist_order = data.tracks.map((e) => e.track.uri);
+    const target = target_playlist;
+    if (target === undefined) {
+      return;
+    }
+    const playlist_order = data.tracks.map((e) => e.track.uri).slice(0, 100);
 
-    const response = await fetch("/api/commit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: target_playlist?.id ?? current_playlist.id,
-        state: playlist_order.slice(0, 100),
-      }),
-    });
-    if (response.status === 200) {
+    committing = true;
+    try {
+      const response = await fetch("/api/commit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: target.id,
+          state: playlist_order,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => undefined);
+        toast.error(`Couldn't commit to "${target.name}"`, {
+          description: err?.message ?? `Spotify responded with status ${response.status}.`,
+        });
+        return;
+      }
+
       fetch("/api/save_target", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sourceId: current_playlist.id,
-          targetId: target_playlist?.id ?? current_playlist.id,
+          targetId: target.id,
         }),
       })
       // Maintain consistent data without a page reload
-      const index = data.playlists.findIndex(p => p.id === current_playlist.id)
-      const item = data.playlists.at(index)!
-      item.targetId = target_playlist?.id;
+      current_playlist.targetId = target.id;
+      committed_ids = data.tracks.map((t) => t.id);
+
+      toast.success(`Committed ${playlist_order.length} tracks to "${target.name}"`);
+    } catch {
+      toast.error(`Couldn't commit to "${target.name}"`, {
+        description: "Check your connection and try again.",
+      });
+    } finally {
+      committing = false;
+      commitDialogOpen = false;
     }
   }
 
-  function onTargetSelected(playlist: Playlist) {
-    if (target_playlist === playlist) {
-      target_playlist = undefined;
+  beforeNavigate(({ type, cancel }) => {
+    if (!isDirty) {
       return;
     }
-    target_playlist = playlist;
-  }
+    // Closing or reloading the tab: cancelling makes the browser show its own prompt
+    if (type === "leave") {
+      cancel();
+      return;
+    }
+    if (!confirm("You have changes that haven't been committed. Leave anyway?")) {
+      cancel();
+    }
+  });
 
   function sortTracks(column: SortBy, direction: SortDirection) {
     if (column === "Title") {
@@ -163,149 +232,165 @@
       sortTracks(column, sortState.direction);
     }
   }
+
+  const sortDescription = (column: SortBy, state: SortState) => {
+    if (state.column !== column || state.direction === SortDirection.None) {
+      return "not sorted";
+    }
+    return state.direction === SortDirection.Ascending ? "sorted ascending" : "sorted descending";
+  };
 </script>
 
-<!-- Playlist greeter -->
-<div class="flex flex-col my-8">
-  <!-- Playlist title card -->
-  <div class={`flex items-end gap-3`}>
-    <Icon src={current_playlist.images[0].url} size="large" />
-    <div class="flex flex-col overflow-hidden max-h-24">
-      <span class="inline-block overflow-hidden font-semibold text-3xl/tight">
+<svelte:head>
+  <title>{current_playlist.name} · Playlist Tool</title>
+</svelte:head>
+
+<!-- Fill the viewport below the app header so the track list scrolls on its own -->
+<div class="flex h-[calc(100dvh-3.5rem)] flex-col pt-6">
+  <!-- Playlist header -->
+  <div class="flex items-end gap-4">
+    <Icon src={current_playlist.images[0]?.url} size="large" class="rounded-md shadow-sm" />
+    <div class="flex min-w-0 flex-col gap-1">
+      <h1 class="truncate text-2xl font-bold tracking-tight sm:text-3xl">
         {current_playlist.name}
-      </span>
-      <span
-        class="inline-block text-muted-foreground overflow-hidden whitespace-nowrap overflow-ellipsis text-base/tight"
-      >
-        {@html current_playlist.description}
-      </span>
+      </h1>
+      {#if current_playlist.description}
+        <p class="truncate text-sm text-muted-foreground">
+          {@html current_playlist.description}
+        </p>
+      {/if}
+      <p class="text-sm text-muted-foreground">
+        {current_playlist.owner.display_name} · {data.tracks.length} tracks
+      </p>
     </div>
   </div>
-  <div
-    class="flex flex-row items-center gap-1 mt-3 pt-3 border-t"
-  >
-    <!-- Shuffle -->
-    <Button variant="ghost" size="icon" on:click={shuffleHandler}>
-      <MaterialSymbolsShuffle style="width: 2em; height: 2em;" />
+
+  <!-- Toolbar -->
+  <div class="mt-4 flex flex-wrap items-center gap-2 border-b pb-3">
+    <Button variant="outline" on:click={shuffleHandler} class="gap-2">
+      <MaterialSymbolsShuffle class="h-4 w-4" aria-hidden="true" />
+      Shuffle
     </Button>
 
-    <!-- More -->
-    <Button variant="ghost" size="icon">
-      <MaterialSymbolsMoreHoriz style="width: 2em; height: 2em;" />
-    </Button>
-
-    <!-- Commit -->
-    <div class="flex ml-auto gap-2">
-      <div class="border-b hover:bg-accent p-1">
-        <Dialog.Root>
-          {#if target_playlist === undefined}
-            <Dialog.Trigger>Click to choose target playlist</Dialog.Trigger>
-          {:else}
-            <Dialog.Trigger>
-              <div class="flex items-center gap-2 p-1">
-                <Icon size="medium" src={target_playlist.images[0].url} />
-                <span>{target_playlist.name}</span>
-              </div>
-            </Dialog.Trigger>
-          {/if}
-          <Dialog.Content>
-            <Dialog.Header>
-              <Dialog.Title>Choose a target</Dialog.Title>
-              <Dialog.Description
-                >Changes made will be commited to the target playlist</Dialog.Description
-              >
-            </Dialog.Header>
-            <ScrollArea>
-              <div class="flex flex-col gap-1 max-h-[350px]">
-                {#each valid_targets as target}
-                  <button
-                    on:click={() => onTargetSelected(target)}
-                    class={`${target === target_playlist ? "bg-primary/15" : "hover:bg-accent"}`}
-                  >
-                    <div class="flex items-center gap-2 p-1">
-                      <Icon size="medium" src={target.images[0].url} />
-                      <span>{target.name}</span>
-                    </div>
-                  </button>
-                {/each}
-              </div>
-            </ScrollArea>
-            <Dialog.Footer>
-              <Dialog.Close>Ok</Dialog.Close>
-            </Dialog.Footer>
-          </Dialog.Content>
-        </Dialog.Root>
-      </div>
-      <AlertDialog.Root>
-        <AlertDialog.Trigger>
-          <MaterialSymbolsCheckCircle
-            style="width: 2em; height: 2em;"
-            class={`text-muted-foreground ${isCommitDisabled ? "hover:text-destructive" : "hover:text-primary"}`}
-          />
-        </AlertDialog.Trigger>
-        <AlertDialog.Content>
-          <AlertDialog.Header>
-            {#if isCommitDisabled}
-              <AlertDialog.Title>Commit not allowed</AlertDialog.Title>
-            {:else}
-              <AlertDialog.Title>Are you sure?</AlertDialog.Title>
-            {/if}
-            <AlertDialog.Description>{commitDialogText}</AlertDialog.Description
+    <DropdownMenu.Root>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild let:builder={tooltipBuilder}>
+          <DropdownMenu.Trigger asChild let:builder={menuBuilder}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="More actions"
+              builders={[tooltipBuilder, menuBuilder]}
             >
-          </AlertDialog.Header>
-          <AlertDialog.Footer>
-            {#if isCommitDisabled}
-              <AlertDialog.Cancel>Ok</AlertDialog.Cancel>
-            {:else}
-              <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-              <AlertDialog.Action on:click={commit}>Ok</AlertDialog.Action>
+              <MaterialSymbolsMoreHoriz class="h-5 w-5" aria-hidden="true" />
+            </Button>
+          </DropdownMenu.Trigger>
+        </Tooltip.Trigger>
+        <Tooltip.Content>More actions</Tooltip.Content>
+      </Tooltip.Root>
+      <DropdownMenu.Content align="start">
+        <DropdownMenu.Item on:click={resetHandler} disabled={isLoadedOrder}>
+          <MaterialSymbolsRestartAlt class="mr-2 h-4 w-4" aria-hidden="true" />
+          Reset to original order
+        </DropdownMenu.Item>
+        <DropdownMenu.Item on:click={reverseHandler}>
+          <MaterialSymbolsSwapVert class="mr-2 h-4 w-4" aria-hidden="true" />
+          Reverse order
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+
+    <div class="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+      <TargetPickerDialog
+        targets={valid_targets}
+        currentId={current_playlist.id}
+        bind:selected={target_playlist}
+      />
+
+      <AlertDialog.Root bind:open={commitDialogOpen}>
+        <AlertDialog.Trigger asChild let:builder>
+          <Button
+            builders={[builder]}
+            disabled={target_playlist === undefined || committing}
+            aria-describedby={commitDisabledReason ? "commit-disabled-reason" : undefined}
+            class="max-w-[16rem] gap-2"
+          >
+            {#if isDirty}
+              <span class="h-2 w-2 shrink-0 rounded-full bg-primary-foreground" aria-hidden="true"></span>
+              <span class="sr-only">Uncommitted changes.</span>
             {/if}
-          </AlertDialog.Footer>
-        </AlertDialog.Content>
+            <span class="truncate">
+              {#if committing}
+                Committing…
+              {:else if target_playlist && target_playlist.id !== current_playlist.id}
+                Commit to {target_playlist.name}
+              {:else}
+                Commit
+              {/if}
+            </span>
+          </Button>
+        </AlertDialog.Trigger>
+        {#if target_playlist}
+          <AlertDialog.Content>
+            <AlertDialog.Header>
+              <AlertDialog.Title>Commit to "{target_playlist.name}"?</AlertDialog.Title>
+              <AlertDialog.Description>
+                This replaces the tracks in "{target_playlist.name}" with the current order.
+                {#if data.tracks.length > 100}
+                  Only the first 100 of {data.tracks.length} tracks will be committed.
+                {/if}
+              </AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel disabled={committing}>Cancel</AlertDialog.Cancel>
+              <!-- Plain button so the dialog stays open while the request runs -->
+              <Button on:click={commit} disabled={committing}>
+                {committing ? "Committing…" : "Commit"}
+              </Button>
+            </AlertDialog.Footer>
+          </AlertDialog.Content>
+        {/if}
       </AlertDialog.Root>
     </div>
-  </div>
-</div>
 
-<div class="flex flex-col">
+    {#if commitDisabledReason}
+      <p id="commit-disabled-reason" class="w-full text-right text-sm text-muted-foreground">
+        {commitDisabledReason}
+      </p>
+    {/if}
+  </div>
+
   <!-- Table header -->
   <div
-    class="grid grid-cols-[3rem_1fr_2.2rem_15px] sm:grid-cols-[3rem_1fr_1fr_3rem_2.2rem_15px] gap-3 border-b py-1"
+    class="grid grid-cols-[3.5rem_1fr_2.2rem_15px] gap-3 border-b py-2 text-sm text-muted-foreground sm:grid-cols-[3.5rem_1fr_1fr_3rem_2.2rem_15px]"
   >
     <span class="flex justify-end">#</span>
     {#each sortableColumns as column}
       <button
         on:click={() => onColumnClicked(column)}
-        class={column === "Album" ? "hidden sm:block" : ""}
+        class="flex items-center gap-1 justify-self-start rounded-sm hover:text-foreground {column === 'Album'
+          ? 'hidden sm:flex'
+          : ''}"
       >
-        <div class={`flex items-center gap-1`}>
-          <!-- NOTE very hacky --->
-          <span>{column}</span>
-          <div class="w-4 h-4">
-            {#if sortState.column === column}
-              {#if sortState.direction === SortDirection.Ascending}
-                <MaterialSymbolsKeyboardArrowUp
-                  viewBox="0 0 25 25"
-                  style="width: 1em; height: 1em;"
-                />
-              {:else if sortState.direction === SortDirection.Descending}
-                <MaterialSymbolsKeyboardArrowDown
-                  viewBox="0 0 25 25"
-                  style="width: 1em; height: 1em;"
-                />
-              {/if}
+        <span>{column}</span>
+        <span class="sr-only">, {sortDescription(column, sortState)}</span>
+        <span class="h-4 w-4" aria-hidden="true">
+          {#if sortState.column === column}
+            {#if sortState.direction === SortDirection.Ascending}
+              <MaterialSymbolsKeyboardArrowUp class="h-4 w-4" />
+            {:else if sortState.direction === SortDirection.Descending}
+              <MaterialSymbolsKeyboardArrowDown class="h-4 w-4" />
             {/if}
-          </div>
-        </div>
+          {/if}
+        </span>
       </button>
     {/each}
-    <div class="hidden sm:flex items-center justify-end">
-      <MaterialSymbolsNestClockFarsightAnalogOutline
-        class="text-muted-foreground"
-        style="width: 1rem; height: 1rem;"
-      />
+    <div class="hidden items-center justify-end sm:flex">
+      <MaterialSymbolsNestClockFarsightAnalogOutline class="h-4 w-4" aria-label="Duration" />
     </div>
   </div>
 
-  <TrackList bind:tracks={data.tracks} />
+  <div class="min-h-0 flex-1">
+    <TrackList bind:tracks={data.tracks} on:move={adoptCurrentOrder} />
+  </div>
 </div>
