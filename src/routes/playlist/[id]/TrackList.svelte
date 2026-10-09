@@ -10,7 +10,7 @@
 
   import MaterialSymbolsMoreHoriz from "~icons/material-symbols/more-horiz";
 
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher, onMount, tick } from "svelte";
   import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { isTrackData } from "./track-data";
@@ -27,6 +27,7 @@
   const dispatch = createEventDispatcher<{ move: { track: PlaylistedTrack; index: number } }>();
 
   let virtualItemElems: HTMLDivElement[] = [];
+  let listElem: HTMLDivElement;
   let osRef: OverlayScrollbarsComponent | undefined;
 
   // Prevents reinitialization of virtualizer when tracks changes
@@ -99,7 +100,7 @@
           }, 50);
 
           // Notification only, the reorder above is unchanged
-          dispatch("move", { track: moved, index: tracks.indexOf(moved) });
+          notifyMove(moved, tracks.indexOf(moved));
         },
       }),
       autoScrollForElements({
@@ -131,7 +132,7 @@
       tracks.splice(originIndex, 1);
       tracks.splice(targetIndex, 0, elem);
       tracks = tracks;
-      dispatch("move", { track: elem, index: targetIndex });
+      notifyMove(elem, targetIndex);
 
       setTimeout(() => {
         const element = document.querySelector(
@@ -182,20 +183,19 @@
     handleMove(moveToIndexSource, moveToIndexValueInt);
   }
 
-  function handleMove(sourceIndex: number, targetIndex: number) {
-    // Function won't be called unless dropdown is active and if dropdown is active we know index is set
-
+  // Returns the track's index after the move
+  function handleMove(sourceIndex: number, targetIndex: number): number {
     // Moving the first track up or the last track down is a no-op
     targetIndex = Math.min(Math.max(targetIndex, 0), tracks.length - 1);
     if (targetIndex === sourceIndex) {
-      return;
+      return sourceIndex;
     }
 
     const elem = tracks[sourceIndex];
     tracks.splice(sourceIndex, 1);
     tracks.splice(targetIndex, 0, elem);
     tracks = tracks;
-    dispatch("move", { track: elem, index: targetIndex });
+    notifyMove(elem, targetIndex);
 
     setTimeout(() => {
       const element = document.querySelector(
@@ -207,6 +207,152 @@
     }, 150);
 
     trackListVirtualItems = $trackListVirtualizer.getVirtualItems();
+    return targetIndex;
+  }
+
+  // Every move (drag, row menu, keyboard) goes through here: focus follows the moved track
+  let announcement = "";
+  async function notifyMove(track: PlaylistedTrack, index: number) {
+    focusedIndex = index;
+    dispatch("move", { track, index });
+
+    // Clear first so moving to the same position twice is announced again
+    announcement = "";
+    await tick();
+    announcement = `Moved "${track.track.name}" to position ${index + 1} of ${tracks.length}`;
+  }
+
+  /* Roving focus: the list is a single Tab stop, only the focused row has tabindex=0.
+   * focusedIndex lives here rather than in the DOM because rows outside the virtual
+   * window aren't rendered. */
+  let focusedIndex = 0;
+
+  // Id (not index) of the track whose row menu is open, so the menu stays with the track if it moves
+  let menuOpenId: string | null = null;
+
+  $: focusedRowRendered = trackListVirtualItems.some((item) => item.index === focusedIndex);
+
+  const rowElem = (index: number) =>
+    listElem?.querySelector<HTMLElement>(`[data-track-index="${index}"]`) ?? null;
+
+  async function focusRow(index: number) {
+    if (tracks.length === 0) {
+      return;
+    }
+    focusedIndex = Math.min(Math.max(index, 0), tracks.length - 1);
+    $trackListVirtualizer.scrollToIndex(focusedIndex, { align: "auto" });
+
+    // The row only exists once the virtualizer has reacted to the scroll
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await tick();
+      const elem = rowElem(focusedIndex);
+      if (elem) {
+        elem.focus();
+        return;
+      }
+      await new Promise(requestAnimationFrame);
+    }
+  }
+
+  // Back to the focused row after a row menu or dialog closes, unless the user has moved on
+  function restoreRowFocus() {
+    if (trackSelectDialogOpen || moveToIndexDialogOpen) {
+      return null;
+    }
+    const active = document.activeElement;
+    if (
+      !active ||
+      active === document.body ||
+      listElem?.contains(active) ||
+      active.closest('[role="menu"], [role="dialog"]')
+    ) {
+      focusRow(focusedIndex);
+    }
+    // Tells bits-ui not to focus anything itself
+    return null;
+  }
+
+  let dialogWasOpen = false;
+  $: {
+    const dialogOpen = trackSelectDialogOpen || moveToIndexDialogOpen;
+    if (dialogWasOpen && !dialogOpen) {
+      setTimeout(restoreRowFocus);
+    }
+    dialogWasOpen = dialogOpen;
+  }
+
+  function onMenuOpenChange(id: string, open: boolean) {
+    if (open) {
+      menuOpenId = id;
+      focusedIndex = tracks.findIndex((t) => t.id === id);
+    } else if (menuOpenId === id) {
+      menuOpenId = null;
+      // Menus opened from the keyboard have no active trigger, so bits-ui won't call closeFocus
+      setTimeout(restoreRowFocus);
+    }
+  }
+
+  function pageSize() {
+    const viewport = osRef?.osInstance()?.elements().viewport;
+    const rowHeight = rowElem(focusedIndex)?.offsetHeight || 52;
+    return Math.max(1, Math.floor((viewport?.clientHeight ?? 0) / rowHeight) - 1);
+  }
+
+  function keyboardMove(targetIndex: number) {
+    focusRow(handleMove(focusedIndex, targetIndex));
+  }
+
+  const isRow = (target: EventTarget | null): target is HTMLElement =>
+    target instanceof HTMLElement && target.getAttribute("role") === "option";
+
+  function onListKeydown(event: KeyboardEvent) {
+    // Keys on the row's own ⋯ button keep their native behaviour
+    if (!isRow(event.target) || event.ctrlKey || event.metaKey) {
+      return;
+    }
+    const index = focusedIndex;
+    const key = event.key;
+
+    if (key === "ContextMenu" || (key === "F10" && event.shiftKey)) {
+      menuOpenId = tracks[index].id;
+    } else if (event.shiftKey) {
+      // Reserved for multi-select
+      return;
+    } else if (event.altKey) {
+      if (key === "ArrowUp") keyboardMove(index - 1);
+      else if (key === "ArrowDown") keyboardMove(index + 1);
+      else if (key === "Home") keyboardMove(0);
+      else if (key === "End") keyboardMove(tracks.length - 1);
+      else return;
+    } else {
+      if (key === "ArrowUp") focusRow(index - 1);
+      else if (key === "ArrowDown") focusRow(index + 1);
+      else if (key === "Home") focusRow(0);
+      else if (key === "End") focusRow(tracks.length - 1);
+      else if (key === "PageUp") focusRow(index - pageSize());
+      else if (key === "PageDown") focusRow(index + pageSize());
+      else if (key === "Enter") menuOpenId = tracks[index].id;
+      else return;
+    }
+    event.preventDefault();
+  }
+
+  // Shift+F10 / the ContextMenu key also fire a native contextmenu on the row; the row menu replaces it
+  function onListContextMenu(event: MouseEvent) {
+    if (isRow(event.target)) {
+      event.preventDefault();
+      menuOpenId = tracks[focusedIndex].id;
+    }
+  }
+
+  function onListFocusin(event: FocusEvent) {
+    const row = (event.target as HTMLElement).closest<HTMLElement>("[data-track-index]");
+    if (row) {
+      focusedIndex = Number(row.dataset.trackIndex);
+    } else if (event.target === listElem) {
+      // Tabbed back in while the focused row is scrolled out of the virtual window
+      focusRow(focusedIndex);
+    }
   }
 </script>
 
@@ -220,7 +366,17 @@
   }}
   class="h-full"
 >
+  <!-- Rows hold the ⋯ button, but it's out of the Tab order and its menu is reachable from the row -->
   <div
+    bind:this={listElem}
+    role="listbox"
+    aria-label="Tracks"
+    aria-describedby="track-list-help"
+    tabindex={tracks.length > 0 && !focusedRowRendered ? 0 : -1}
+    on:keydown={onListKeydown}
+    on:contextmenu={onListContextMenu}
+    on:focusin={onListFocusin}
+    class="focus-visible:outline-none"
     style="position: relative; width: 100%; height: {$trackListVirtualizer.getTotalSize()}px;"
   >
     <div
@@ -229,20 +385,32 @@
         : 0}px);"
     >
       {#each trackListVirtualItems as virtItem (tracks[virtItem.index])}
+        {@const item = tracks[virtItem.index]}
         <div
           data-track-index={virtItem.index}
-          class="grid grid-cols-[1fr_2.2rem_15px] gap-3 border-b transition-colors hover:bg-accent/60"
+          role="option"
+          aria-selected={virtItem.index === focusedIndex}
+          aria-posinset={virtItem.index + 1}
+          aria-setsize={tracks.length}
+          aria-label={`${item.track.name} by ${item.track.artists[0].name}`}
+          tabindex={virtItem.index === focusedIndex ? 0 : -1}
+          class="grid grid-cols-[1fr_2.2rem_15px] gap-3 border-b transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           <Track index={virtItem.index} track={tracks[virtItem.index].track} />
           <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
-          <DropdownMenu.Root>
+          <DropdownMenu.Root
+            open={menuOpenId === item.id}
+            onOpenChange={(open) => onMenuOpenChange(item.id, open)}
+            closeFocus={restoreRowFocus}
+          >
             <DropdownMenu.Trigger asChild let:builder>
               <div class="flex items-center relative">
                 <Button
                   size="icon"
                   variant="ghost"
                   class="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  aria-label={`Options for ${tracks[virtItem.index].track.name}`}
+                  tabindex={-1}
+                  aria-label={`Options for ${item.track.name}`}
                   builders={[builder]}
                 >
                   <MaterialSymbolsMoreHoriz class="h-5 w-5" aria-hidden="true" />
@@ -310,6 +478,12 @@
     </div>
   </div>
 </OverlayScrollbarsComponent>
+
+<p id="track-list-help" class="sr-only">
+  Use arrow keys to browse. Alt plus arrow keys moves the track. Enter opens track options.
+  Press question mark for all keyboard shortcuts.
+</p>
+<div class="sr-only" role="status" aria-live="polite">{announcement}</div>
 
 <TrackSelectDialog
   {tracks}
