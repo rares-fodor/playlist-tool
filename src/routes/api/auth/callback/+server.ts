@@ -23,12 +23,12 @@ export async function GET(event: RequestEvent): Promise<Response> {
     return error(400, 'Auth code missing!');
   }
 
-  const tokens = await spotify_auth.validateAuthorizationCode(code);
+  const tokens = await spotify_auth.validateAuthorizationCode(code, null);
 
   // Request user data
   const spotify_user = await fetch("https://api.spotify.com/v1/me", {
     headers: {
-      Authorization: `Bearer ${tokens.accessToken}`
+      Authorization: `Bearer ${tokens.accessToken()}`
     }
   });
 
@@ -39,9 +39,9 @@ export async function GET(event: RequestEvent): Promise<Response> {
 
   if (existing_user) {
     const session = await lucia.createSession(existing_user.id, {
-      access_token: tokens.accessToken,
-      refresh_token: tokens.refreshToken,
-      access_token_expires_at: tokens.accessTokenExpiresAt.toISOString(),
+      access_token: tokens.accessToken(),
+      refresh_token: tokens.refreshToken(),
+      access_token_expires_at: tokens.accessTokenExpiresAt().toISOString(),
     });
     const session_cookie = lucia.createSessionCookie(session.id);
     event.cookies.set(session_cookie.name, session_cookie.value, {
@@ -56,9 +56,9 @@ export async function GET(event: RequestEvent): Promise<Response> {
       user_data.id
     );
     const session = await lucia.createSession(id, {
-      access_token: tokens.accessToken,
-      refresh_token: tokens.refreshToken,
-      access_token_expires_at: tokens.accessTokenExpiresAt.toISOString(),
+      access_token: tokens.accessToken(),
+      refresh_token: tokens.refreshToken(),
+      access_token_expires_at: tokens.accessTokenExpiresAt().toISOString(),
     });
     const session_cookie = lucia.createSessionCookie(session.id);
     event.cookies.set(session_cookie.name, session_cookie.value, {
