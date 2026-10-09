@@ -4,6 +4,7 @@
   import { ModeWatcher, setMode, userPrefersMode } from "mode-watcher";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import { Button } from "$lib/components/ui/button";
+  import { Toaster } from "$lib/components/ui/sonner";
   import { ChevronDown, LogOut } from "lucide-svelte";
 
   import type { LayoutData } from "./$types";
@@ -20,6 +21,7 @@
 </script>
 
 <ModeWatcher />
+<Toaster />
 
 <a
   href="#main"
@@ -29,8 +31,9 @@
 </a>
 
 <div class="flex min-h-dvh flex-col">
-  <header class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-    <div class="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
+  <!-- Fixed 3.5rem height (border included): the playlist editor sizes itself against it -->
+  <header class="sticky top-0 z-40 h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <div class="mx-auto flex h-full max-w-6xl items-center gap-4 px-4">
       <a href="/playlist" class="rounded-sm text-lg font-semibold tracking-tight">
         Playlist Tool
       </a>

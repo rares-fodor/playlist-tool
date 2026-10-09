@@ -10,7 +10,7 @@
 
   import MaterialSymbolsMoreHoriz from "~icons/material-symbols/more-horiz";
 
-  import { onMount } from "svelte";
+  import { createEventDispatcher, onMount } from "svelte";
   import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { isTrackData } from "./track-data";
@@ -22,6 +22,9 @@
   import TrackSelectDialog from "./TrackSelectDialog.svelte";
 
   export let tracks: PlaylistedTrack[];
+
+  // Fired after every manual move (drag, row menu), with the moved track's new index
+  const dispatch = createEventDispatcher<{ move: { track: PlaylistedTrack; index: number } }>();
 
   let virtualItemElems: HTMLDivElement[] = [];
   let osRef: OverlayScrollbarsComponent | undefined;
@@ -55,7 +58,6 @@
     return combine(
       monitorForElements({
         canMonitor({ source }) {
-          console.log(isTrackData);
           return isTrackData(source.data);
         },
         onDrop({ location, source }) {
@@ -72,11 +74,11 @@
 
           const sourceIndex = sourceData.trackIndex;
           const targetIndex = targetData.trackIndex;
-          console.log(sourceIndex, targetIndex);
 
           const closestEdge =
             sourceIndex > targetIndex ? ("top" as Edge) : ("bottom" as Edge);
 
+          const moved = tracks[sourceIndex];
           tracks = reorderWithEdge({
             list: tracks,
             startIndex: sourceIndex,
@@ -95,6 +97,9 @@
               triggerPostMoveFlash(element);
             }
           }, 50);
+
+          // Notification only, the reorder above is unchanged
+          dispatch("move", { track: moved, index: tracks.indexOf(moved) });
         },
       }),
       autoScrollForElements({
@@ -125,6 +130,8 @@
       const elem = tracks[originIndex];
       tracks.splice(originIndex, 1);
       tracks.splice(targetIndex, 0, elem);
+      tracks = tracks;
+      dispatch("move", { track: elem, index: targetIndex });
 
       setTimeout(() => {
         const element = document.querySelector(
@@ -178,9 +185,17 @@
   function handleMove(sourceIndex: number, targetIndex: number) {
     // Function won't be called unless dropdown is active and if dropdown is active we know index is set
 
+    // Moving the first track up or the last track down is a no-op
+    targetIndex = Math.min(Math.max(targetIndex, 0), tracks.length - 1);
+    if (targetIndex === sourceIndex) {
+      return;
+    }
+
     const elem = tracks[sourceIndex];
     tracks.splice(sourceIndex, 1);
     tracks.splice(targetIndex, 0, elem);
+    tracks = tracks;
+    dispatch("move", { track: elem, index: targetIndex });
 
     setTimeout(() => {
       const element = document.querySelector(
@@ -203,7 +218,7 @@
       autoHide: "scroll",
     },
   }}
-  class="h-[650px]"
+  class="h-full"
 >
   <div
     style="position: relative; width: 100%; height: {$trackListVirtualizer.getTotalSize()}px;"
@@ -216,7 +231,7 @@
       {#each trackListVirtualItems as virtItem (tracks[virtItem.index])}
         <div
           data-track-index={virtItem.index}
-          class="grid grid-cols-[1fr_2.2rem_15px] gap-3 hover:bg-accent/60 border-b"
+          class="grid grid-cols-[1fr_2.2rem_15px] gap-3 border-b transition-colors hover:bg-accent/60"
         >
           <Track index={virtItem.index} track={tracks[virtItem.index].track} />
           <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
@@ -225,14 +240,12 @@
               <div class="flex items-center relative">
                 <Button
                   size="icon"
-                  variant="outline"
-                  class="h-8 w-8"
+                  variant="ghost"
+                  class="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  aria-label={`Options for ${tracks[virtItem.index].track.name}`}
                   builders={[builder]}
                 >
-                  <MaterialSymbolsMoreHoriz
-                    style="width: 2em; height: 2em;"
-                    class={`text-muted-foreground hover:text-foreground`}
-                  />
+                  <MaterialSymbolsMoreHoriz class="h-5 w-5" aria-hidden="true" />
                 </Button>
               </div>
             </DropdownMenu.Trigger>
@@ -315,7 +328,13 @@
         </p>
       </Dialog.Description>
     </Dialog.Header>
-    <div class="flex gap-2">
+    <form
+      class="flex gap-2"
+      on:submit|preventDefault={() => {
+        handleMoveToIndex();
+        moveToIndexDialogOpen = false;
+      }}
+    >
       <Input
         placeholder="Index"
         id="indexSelect"
@@ -324,18 +343,8 @@
         max={tracks.length}
         bind:value={moveToIndexValue}
       />
-      <Button
-        on:click={() => {
-          handleMoveToIndex();
-          if (!moveToIndexButtonDisabled) {
-            moveToIndexDialogOpen = false;
-          }
-        }}
-        class={`${moveToIndexButtonDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-      >
-        Confirm
-      </Button>
-    </div>
+      <Button type="submit" disabled={moveToIndexButtonDisabled}>Confirm</Button>
+    </form>
   </Dialog.Content>
 </Dialog.Root>
 

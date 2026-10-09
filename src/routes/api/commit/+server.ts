@@ -19,9 +19,9 @@ export async function POST(event: RequestEvent): Promise<Response> {
     })
   });
 
-  if (response.status !== 200) {
+  if (!response.ok) {
     const err = (await response.json() as APIError).error;
-    return json(err);
+    return json(err, { status: err.status });
   }
 
   const snapshot = await response.json();
