@@ -26,8 +26,12 @@
         { keys: [["PgUp"], ["PgDn"]], action: "Up / down one page" },
         { keys: [["Alt", "↑"], ["Alt", "↓"]], action: "Move track up / down" },
         { keys: [["Alt", "Home"], ["Alt", "End"]], action: "Move track to top / bottom" },
-        { keys: [["Space"], ["Shift", "F10"]], action: "Track options" },
-        { keys: [["Esc"]], action: "Close menu" },
+        { keys: [["Space"]], action: "Select / deselect track" },
+        { keys: [["Shift", "↑"], ["Shift", "↓"]], action: "Extend selection" },
+        { keys: [["Ctrl", "Click"]], action: "Select / deselect track" },
+        { keys: [["Shift", "Click"]], action: "Select range" },
+        { keys: [["Enter"], ["Shift", "F10"]], action: "Track options" },
+        { keys: [["Esc"]], action: "Clear selection / close menu" },
       ],
     },
     {
@@ -41,7 +45,7 @@
   <Dialog.Content class="max-h-[90dvh] overflow-y-auto">
     <Dialog.Header>
       <Dialog.Title>Keyboard shortcuts</Dialog.Title>
-      <Dialog.Description>On a Mac, use Option (⌥) for Alt.</Dialog.Description>
+      <Dialog.Description>On a Mac, use Option (⌥) for Alt and Command (⌘) for Ctrl.</Dialog.Description>
     </Dialog.Header>
     {#each groups as group}
       <section>
