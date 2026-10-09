@@ -67,7 +67,7 @@ function should_refresh_token(expires_at: string) {
 
 async function refresh_token(session: Session) {
     const tokens = await spotify_auth.refreshAccessToken(session.refresh_token);
-    const refresh_token = tokens.refreshToken === undefined ? session.refresh_token : tokens.refreshToken;
+    const refresh_token = tokens.hasRefreshToken() ? tokens.refreshToken() : session.refresh_token;
 
     const stmt = db.prepare(`UPDATE session SET
                             access_token = ?,
@@ -75,16 +75,16 @@ async function refresh_token(session: Session) {
                             access_token_expires_at = ?
                             WHERE id = ?`);
     const info = stmt.run(
-        tokens.accessToken,
+        tokens.accessToken(),
         refresh_token,
-        tokens.accessTokenExpiresAt.toISOString(),
+        tokens.accessTokenExpiresAt().toISOString(),
         session.id
     );
 
     console.log(info);
 
-    session.access_token = tokens.accessToken;
+    session.access_token = tokens.accessToken();
     session.refresh_token = refresh_token;
-    session.access_token_expires_at = tokens.accessTokenExpiresAt.toISOString();
+    session.access_token_expires_at = tokens.accessTokenExpiresAt().toISOString();
 }
 
