@@ -1,101 +1,128 @@
 <script lang="ts">
-  import Icon from "$lib/components/Icon.svelte";
-  import { Toggle } from "$lib/components/ui/toggle";
-  import * as Form from "$lib/components/ui/form";
-  import { superForm } from "sveltekit-superforms";
-  import { formSchema } from "./schema"
-  import { zodClient } from "sveltekit-superforms/adapters";
-  import { Eye, EyeOff } from "lucide-svelte";
+  import { toast } from "svelte-sonner";
+  import { ChevronRight } from "lucide-svelte";
+  import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
+  import PlaylistList from "./PlaylistList.svelte";
 
+  import type { Playlist } from "$lib/api_types";
   import type { PageData } from "./$types";
   export let data: PageData;
 
-  const form = superForm(data.form, {
-    validators: zodClient(formSchema),
-  });
+  let hiddenOpen = false;
 
-  const { form: formData, enhance } = form
+  $: visiblePlaylists = data.playlists.filter((pl) => pl.isVisible);
+  $: hiddenPlaylists = data.playlists.filter((pl) => !pl.isVisible);
 
-  function hidePlaylist(id: string) {
-    $formData.ids = [...$formData.ids, id]
+  // Optimistic: applied at once, reverted if the server rejects it
+  async function setVisibility(playlist: Playlist, visible: boolean, undoable: boolean) {
+    // Mutates the shared layout data, so the editor's target picker sees it without a reload
+    playlist.isVisible = visible;
+    data.playlists = data.playlists;
+
+    if (undoable) {
+      toast(`"${playlist.name}" is now ${visible ? "shown" : "hidden"}`, {
+        action: {
+          label: "Undo",
+          onClick: () => setVisibility(playlist, !visible, false),
+        },
+      });
+    }
+
+    try {
+      const response = await fetch("/api/hide_playlists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [playlist.id], visible }),
+      });
+      if (!response.ok) {
+        throw new Error();
+      }
+    } catch {
+      // Unless a later toggle has already changed it again
+      if (playlist.isVisible === visible) {
+        playlist.isVisible = !visible;
+        data.playlists = data.playlists;
+      }
+      toast.error(`Couldn't ${visible ? "show" : "hide"} "${playlist.name}"`, {
+        description: "Check your connection and try again.",
+      });
+    }
   }
-  function showPlaylist(id: string) {
-    $formData.ids = $formData.ids.filter((i) => i !== id)
+
+  function onToggle(event: CustomEvent<Playlist>) {
+    const playlist = event.detail;
+    setVisibility(playlist, !playlist.isVisible, true);
   }
-
-  $: visiblePlaylists = data.playlists.filter(pl => pl.isVisible)
-  $: hiddenPlaylists = data.playlists.filter(pl => !pl.isVisible)
-
 </script>
 
-<div class="grid">
-  <form action="?/hidePlaylists" method="POST" use:enhance class="mx-auto lg:min-w-[60rem]">
-    {#if $formData.ids.length > 0}
-      <div class="fixed top-4 right-4">
-        <Form.Button>Save changes</Form.Button>
-      </div>
-    {/if}
-    <Form.Fieldset {form} name="ids" class="pt-2">
-      <ul aria-label="Playlists" class="list-none">
-        {#each [visiblePlaylists, hiddenPlaylists] as playlists}
-          {#if playlists === hiddenPlaylists && hiddenPlaylists.length > 0}
-            <hr class="border-t">
+<svelte:head>
+  <title>Playlists · Playlist Tool</title>
+</svelte:head>
+
+<!-- Fill the viewport below the app header so the list scrolls on its own, like the editor -->
+<div class="mx-auto flex h-[calc(100dvh-3.5rem)] w-full max-w-3xl flex-col py-6">
+  <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Your playlists</h1>
+  <p class="mt-1 text-sm text-muted-foreground">
+    {visiblePlaylists.length} shown{#if hiddenPlaylists.length > 0}, {hiddenPlaylists.length} hidden{/if}
+  </p>
+
+  <!-- Negative margin + padding keeps row focus rings clear of the scroll area's clipping edge -->
+  <OverlayScrollbarsComponent
+    options={{
+      scrollbars: {
+        theme: "os-theme-dark",
+        autoHide: "scroll",
+      },
+    }}
+    class="-mx-1 mt-4 min-h-0 flex-1 border-b"
+  >
+    <div class="px-1 pb-1">
+      {#if visiblePlaylists.length > 0}
+        <PlaylistList
+          playlists={visiblePlaylists}
+          label="Playlists"
+          userId={data.user?.spotify_id}
+          on:toggle={onToggle}
+        />
+      {:else}
+        <p class="py-8 text-center text-sm text-muted-foreground">
+          {data.playlists.length > 0 ? "All your playlists are hidden." : "You don't have any playlists yet."}
+        </p>
+      {/if}
+
+      {#if hiddenPlaylists.length > 0}
+        <section class="mt-6 border-t pt-2">
+          <h2>
+            <button
+              type="button"
+              aria-expanded={hiddenOpen}
+              aria-controls="hidden-playlists"
+              on:click={() => (hiddenOpen = !hiddenOpen)}
+              class="flex w-full items-center gap-2 rounded-md p-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <ChevronRight
+                class="h-4 w-4 transition-transform {hiddenOpen ? 'rotate-90' : ''}"
+                aria-hidden="true"
+              />
+              Hidden ({hiddenPlaylists.length})
+            </button>
+          </h2>
+          {#if hiddenOpen}
+            <PlaylistList
+              id="hidden-playlists"
+              playlists={hiddenPlaylists}
+              label="Hidden playlists"
+              userId={data.user?.spotify_id}
+              on:toggle={onToggle}
+            />
           {/if}
-          {#each playlists as playlist (playlist.id)}
-            {@const checked = $formData.ids.includes(playlist.id)}
-            <div class="flex items-center gap-2 border-b p-2">
-              <Form.Control let:attrs >
-                <Form.Label>
-                  <li>
-                    <a href={`/playlist/${playlist.id}`}>
-                      <div class="flex align-middle gap-3 py-1">
-                        <Icon size="medium" src={playlist.images[0].url} />
-                        <div class="flex items-center">
-                          <span>{playlist.name}</span>
-                        </div>
-                      </div>
-                    </a>
-                  </li>
-                </Form.Label>
-                <Toggle
-                  size="sm"
-                  class="ml-auto"
-                  pressed={checked}
-                  onPressedChange={(v) => {
-                    if (v) {
-                      hidePlaylist(playlist.id);
-                    } else {
-                      showPlaylist(playlist.id);
-                    }
-                  }}
-                >
-                  {#if playlists === visiblePlaylists}
-                    {#if checked}
-                      <EyeOff />
-                    {:else}
-                      <Eye />
-                    {/if}
-                  {:else if playlists === hiddenPlaylists}
-                    {#if checked}
-                      <Eye />
-                    {:else}
-                      <EyeOff />
-                    {/if}
-                  {/if}
-                </Toggle>
-                <input
-                  hidden
-                  type="checkbox"
-                  name={attrs.name}
-                  value={playlist.id}
-                  {checked}
-                />
-              </Form.Control>
-            </div>
-          {/each}
-        {/each}
-      </ul>
-      <Form.FieldErrors />
-    </Form.Fieldset>
-  </form>
+        </section>
+      {/if}
+    </div>
+  </OverlayScrollbarsComponent>
 </div>
+
+<p id="playlist-list-help" class="sr-only">
+  Use arrow keys to browse and Space or Enter to open. H hides or shows the playlist.
+  Press question mark for all keyboard shortcuts.
+</p>

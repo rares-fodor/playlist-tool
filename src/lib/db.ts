@@ -71,26 +71,6 @@ export function getUserPlaylistVisibility(userId: string): Map<string, boolean> 
   return result;
 }
 
-export function toggleUserPlaylistVisibility(userId: string, playlistIds: string[]) {
-  const selectStmt = db.prepare(
-    `SELECT visibility FROM user_hidden_playlists WHERE user_id = ? AND playlist_id = ?`
-  );
-  const updateStmt = db.prepare(
-    `UPDATE user_hidden_playlists SET visibility = ? WHERE user_id = ? AND playlist_id = ?`
-  );
-
-  const toggleMany = db.transaction((userId: string, playlistIds: string[]) => {
-    for (const playlistId of playlistIds) {
-      const row = selectStmt.get(userId, playlistId) as PlaylistVisibility;
-      // Toggle visibility
-      const newVisibility = row.visibility ? 0 : 1;
-      updateStmt.run(newVisibility, userId, playlistId);
-    }
-  });
-
-  toggleMany(userId, playlistIds);
-}
-
 export function setUserPlaylistVisibility(userId: string, playlistIds: string[], isVisible: boolean) {
   let numericVisibility: number = isVisible ? 1 : 0;
   const stmt = db.prepare(
@@ -102,8 +82,7 @@ export function setUserPlaylistVisibility(userId: string, playlistIds: string[],
 
   const insertMany = db.transaction((userId: string, playlistIds: string[]) => {
     for (const playlistId of playlistIds) {
-      const info = stmt.run(userId, playlistId, numericVisibility)
-      console.log(info)
+      stmt.run(userId, playlistId, numericVisibility)
     }
   })
 
