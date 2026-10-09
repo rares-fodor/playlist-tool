@@ -28,7 +28,7 @@
 
 </script>
 
-<main class="grid">
+<div class="grid">
   <form action="?/hidePlaylists" method="POST" use:enhance class="mx-auto lg:min-w-[60rem]">
     {#if $formData.ids.length > 0}
       <div class="fixed top-4 right-4">
@@ -39,11 +39,11 @@
       <ul aria-label="Playlists" class="list-none">
         {#each [visiblePlaylists, hiddenPlaylists] as playlists}
           {#if playlists === hiddenPlaylists && hiddenPlaylists.length > 0}
-            <hr class="border-t border-t-gray-500">
+            <hr class="border-t">
           {/if}
           {#each playlists as playlist (playlist.id)}
             {@const checked = $formData.ids.includes(playlist.id)}
-            <div class="flex items-center gap-2 border-b border-b-gray-300 p-2">
+            <div class="flex items-center gap-2 border-b p-2">
               <Form.Control let:attrs >
                 <Form.Label>
                   <li>
@@ -98,4 +98,4 @@
       <Form.FieldErrors />
     </Form.Fieldset>
   </form>
-</main>
+</div>

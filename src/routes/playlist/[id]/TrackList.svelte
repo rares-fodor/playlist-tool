@@ -216,7 +216,7 @@
       {#each trackListVirtualItems as virtItem (tracks[virtItem.index])}
         <div
           data-track-index={virtItem.index}
-          class="grid grid-cols-[1fr_2.2rem_15px] gap-3 hover:bg-gray-200 border-b border-b-gray-300"
+          class="grid grid-cols-[1fr_2.2rem_15px] gap-3 hover:bg-accent/60 border-b"
         >
           <Track index={virtItem.index} track={tracks[virtItem.index].track} />
           <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
@@ -231,7 +231,7 @@
                 >
                   <MaterialSymbolsMoreHoriz
                     style="width: 2em; height: 2em;"
-                    class={`text-gray-700 hover:text-black`}
+                    class={`text-muted-foreground hover:text-foreground`}
                   />
                 </Button>
               </div>
@@ -310,7 +310,7 @@
     <Dialog.Header>
       <Dialog.Title>Move to index (0 - {tracks.length})</Dialog.Title>
       <Dialog.Description>
-        <p class={`${moveToIndexWarning ? "text-red-600" : ""} h-4`}>
+        <p class={`${moveToIndexWarning ? "text-destructive" : ""} h-4`}>
           {moveToIndexWarning ?? ""}
         </p>
       </Dialog.Description>

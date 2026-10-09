@@ -19,7 +19,7 @@
     --border: 220 13% 91%;
     --input: 220 13% 91%;
  
-    --primary: 220.9 39.3% 11%;
+    --primary: 262.1 83.3% 57.8%;
     --primary-foreground: 210 20% 98%;
  
     --secondary: 220 14.3% 95.9%;
@@ -28,10 +28,10 @@
     --accent: 220 14.3% 95.9%;
     --accent-foreground: 220.9 39.3% 11%;
  
-    --destructive: 0 72.2% 50.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
  
-    --ring: 224 71.4% 4.1%;
+    --ring: 262.1 83.3% 57.8%;
  
     --radius: 0.5rem;
   }
@@ -52,8 +52,8 @@
     --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
  
-    --primary: 210 20% 98%;
-    --primary-foreground: 220.9 39.3% 11%;
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 20% 98%;
  
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 20% 98%;
@@ -64,7 +64,7 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 20% 98%;
  
-    --ring: 216 12.2% 83.9%;
+    --ring: 263.4 70% 50.4%;
   }
 }
  
@@ -75,4 +75,18 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+@layer base {
+  /* One focus indicator for every focusable element; components that draw their own
+     highlight (e.g. menu items) opt out with `outline-none`. */
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+/* Theme-aware overlayscrollbars handles */
+:root .os-theme-dark {
+  --os-handle-bg: hsl(var(--muted-foreground) / 0.45);
+  --os-handle-bg-hover: hsl(var(--muted-foreground) / 0.7);
+  --os-handle-bg-active: hsl(var(--muted-foreground) / 0.9);
 }

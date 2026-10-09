@@ -175,14 +175,14 @@
         {current_playlist.name}
       </span>
       <span
-        class="inline-block text-gray-800 overflow-hidden whitespace-nowrap overflow-ellipsis text-base/tight"
+        class="inline-block text-muted-foreground overflow-hidden whitespace-nowrap overflow-ellipsis text-base/tight"
       >
         {@html current_playlist.description}
       </span>
     </div>
   </div>
   <div
-    class="flex flex-row items-center gap-1 mt-3 pt-3 border-t border-t-black"
+    class="flex flex-row items-center gap-1 mt-3 pt-3 border-t"
   >
     <!-- Shuffle -->
     <Button variant="ghost" size="icon" on:click={shuffleHandler}>
@@ -196,7 +196,7 @@
 
     <!-- Commit -->
     <div class="flex ml-auto gap-2">
-      <div class="border-b border-black hover:bg-gray-200 p-1">
+      <div class="border-b hover:bg-accent p-1">
         <Dialog.Root>
           {#if target_playlist === undefined}
             <Dialog.Trigger>Click to choose target playlist</Dialog.Trigger>
@@ -220,7 +220,7 @@
                 {#each valid_targets as target}
                   <button
                     on:click={() => onTargetSelected(target)}
-                    class={`${target === target_playlist ? "bg-green-200" : "hover:bg-gray-200"}`}
+                    class={`${target === target_playlist ? "bg-primary/15" : "hover:bg-accent"}`}
                   >
                     <div class="flex items-center gap-2 p-1">
                       <Icon size="medium" src={target.images[0].url} />
@@ -240,7 +240,7 @@
         <AlertDialog.Trigger>
           <MaterialSymbolsCheckCircle
             style="width: 2em; height: 2em;"
-            class={`text-gray-700 ${isCommitDisabled ? "hover:text-red-600" : "hover:text-green-600"}`}
+            class={`text-muted-foreground ${isCommitDisabled ? "hover:text-destructive" : "hover:text-primary"}`}
           />
         </AlertDialog.Trigger>
         <AlertDialog.Content>
@@ -270,7 +270,7 @@
 <div class="flex flex-col">
   <!-- Table header -->
   <div
-    class="grid grid-cols-[3rem_1fr_2.2rem_15px] sm:grid-cols-[3rem_1fr_1fr_3rem_2.2rem_15px] gap-3 border-b border-b-gray-400 py-1"
+    class="grid grid-cols-[3rem_1fr_2.2rem_15px] sm:grid-cols-[3rem_1fr_1fr_3rem_2.2rem_15px] gap-3 border-b py-1"
   >
     <span class="flex justify-end">#</span>
     {#each sortableColumns as column}
@@ -301,7 +301,7 @@
     {/each}
     <div class="hidden sm:flex items-center justify-end">
       <MaterialSymbolsNestClockFarsightAnalogOutline
-        class="text-gray-900"
+        class="text-muted-foreground"
         style="width: 1rem; height: 1rem;"
       />
     </div>

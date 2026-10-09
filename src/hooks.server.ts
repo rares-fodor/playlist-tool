@@ -50,7 +50,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     // Disallow connected users from reaching /login
     if (event.url.pathname.startsWith('/login')) {
-        return redirect(302, '/');
+        return redirect(302, '/playlist');
     }
 
     return resolve(event);
