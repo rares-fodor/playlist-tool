@@ -21,7 +21,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS session (
 db.exec(`CREATE TABLE IF NOT EXISTS user_hidden_playlists (
   user_id TEXT NOT NULL,
   playlist_id TEXT NOT NULL,
-  isVisible INTEGER NOT NULL,
+  visibility INTEGER NOT NULL,
   FOREIGN KEY (user_id) REFERENCES user(id),
   UNIQUE(user_id, playlist_id)
 )`)
