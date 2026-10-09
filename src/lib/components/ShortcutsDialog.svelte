@@ -10,6 +10,15 @@
 
   const groups: { title: string; shortcuts: Shortcut[] }[] = [
     {
+      title: "Playlists",
+      shortcuts: [
+        { keys: [["↑"], ["↓"]], action: "Previous / next playlist" },
+        { keys: [["Home"], ["End"]], action: "First / last playlist" },
+        { keys: [["Space"], ["Enter"]], action: "Open playlist" },
+        { keys: [["H"]], action: "Hide / show playlist" },
+      ],
+    },
+    {
       title: "Track list",
       shortcuts: [
         { keys: [["↑"], ["↓"]], action: "Previous / next track" },
@@ -17,7 +26,7 @@
         { keys: [["PgUp"], ["PgDn"]], action: "Up / down one page" },
         { keys: [["Alt", "↑"], ["Alt", "↓"]], action: "Move track up / down" },
         { keys: [["Alt", "Home"], ["Alt", "End"]], action: "Move track to top / bottom" },
-        { keys: [["Enter"], ["Shift", "F10"]], action: "Track options" },
+        { keys: [["Space"], ["Shift", "F10"]], action: "Track options" },
         { keys: [["Esc"]], action: "Close menu" },
       ],
     },
