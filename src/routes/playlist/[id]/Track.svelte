@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from "$lib/components/Icon.svelte";
-  import MaterialSymbolsDragIndicator from "~icons/material-symbols/drag-indicator";
+  import Check from "svelte-radix/Check.svelte";
 
   import {
     draggable,
@@ -20,6 +20,7 @@
 
   export let track: TrackItem;
   export let index: number;
+  export let selected: boolean;
 
   let element: HTMLElement;
 
@@ -105,10 +106,18 @@
     ></div>
   {/if}
   <div class="flex items-center justify-end gap-1 text-sm tabular-nums text-muted-foreground">
-    <MaterialSymbolsDragIndicator
-      class="h-4 w-4 shrink-0 opacity-40 transition-opacity group-hover:opacity-100"
+    <!-- Visual only: TrackList toggles it on click, aria-selected conveys the state -->
+    <span
+      data-select-box
+      class="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border transition-colors {selected
+        ? 'border-primary bg-primary text-primary-foreground'
+        : 'border-muted-foreground/50 hover:border-primary'}"
       aria-hidden="true"
-    />
+    >
+      {#if selected}
+        <Check class="h-3.5 w-3.5" />
+      {/if}
+    </span>
     <span>{index}</span>
   </div>
   <div class="flex min-w-0 items-center max-h-11 gap-2">

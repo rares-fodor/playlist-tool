@@ -222,6 +222,71 @@
     announcement = `Moved "${track.track.name}" to position ${index + 1} of ${tracks.length}`;
   }
 
+  /* Multi-select, by synthetic track id. Any reorder (here or in the page toolbar) clears it,
+   * which is detected by comparing the id order rather than hooking every reorder path. */
+  let selected = new Set<string>();
+  // Id of the track Shift-click ranges start from
+  let selectionAnchor: string | null = null;
+
+  const orderKey = (list: PlaylistedTrack[]) => list.map((t) => t.id).join("\n");
+  let selectionOrderKey = orderKey(tracks);
+  $: onTracksChanged(tracks);
+  function onTracksChanged(list: PlaylistedTrack[]) {
+    const key = orderKey(list);
+    if (key !== selectionOrderKey) {
+      selectionOrderKey = key;
+      clearSelection();
+    }
+  }
+
+  function clearSelection() {
+    selected = new Set();
+    selectionAnchor = null;
+  }
+
+  function toggleSelected(index: number) {
+    const id = tracks[index].id;
+    if (!selected.delete(id)) {
+      selected.add(id);
+    }
+    selected = selected;
+    selectionAnchor = id;
+  }
+
+  // Adds every track between the two indices (inclusive) to the selection
+  function selectRange(from: number, to: number) {
+    const [start, end] = from < to ? [from, to] : [to, from];
+    for (let i = start; i <= end; i++) {
+      selected.add(tracks[i].id);
+    }
+    selected = selected;
+  }
+
+  function onRowClick(event: MouseEvent, index: number) {
+    const target = event.target as HTMLElement;
+    // The ⋯ button handles its own clicks
+    if (target.closest("button")) {
+      return;
+    }
+    if (event.shiftKey) {
+      const anchorIndex = tracks.findIndex((t) => t.id === selectionAnchor);
+      selectRange(anchorIndex === -1 ? index : anchorIndex, index);
+      if (anchorIndex === -1) {
+        selectionAnchor = tracks[index].id;
+      }
+    } else if (event.ctrlKey || event.metaKey || target.closest("[data-select-box]")) {
+      toggleSelected(index);
+    }
+    // A plain click only focuses the row, which the browser already does
+  }
+
+  function keyboardExtendSelection(targetIndex: number) {
+    targetIndex = Math.min(Math.max(targetIndex, 0), tracks.length - 1);
+    selectRange(focusedIndex, targetIndex);
+    selectionAnchor ??= tracks[focusedIndex].id;
+    focusRow(targetIndex);
+  }
+
   /* Roving focus: the list is a single Tab stop, only the focused row has tabindex=0.
    * focusedIndex lives here rather than in the DOM because rows outside the virtual
    * window aren't rendered. */
@@ -338,8 +403,9 @@
     if (key === "ContextMenu" || (key === "F10" && event.shiftKey)) {
       openRowMenu(index, key);
     } else if (event.shiftKey) {
-      // Reserved for multi-select
-      return;
+      if (key === "ArrowUp") keyboardExtendSelection(index - 1);
+      else if (key === "ArrowDown") keyboardExtendSelection(index + 1);
+      else return;
     } else if (event.altKey) {
       if (key === "ArrowUp") keyboardMove(index - 1);
       else if (key === "ArrowDown") keyboardMove(index + 1);
@@ -353,7 +419,10 @@
       else if (key === "End") focusRow(tracks.length - 1);
       else if (key === "PageUp") focusRow(index - pageSize());
       else if (key === "PageDown") focusRow(index + pageSize());
-      else if (key === " ") openRowMenu(index, key);
+      else if (key === " ") toggleSelected(index);
+      else if (key === "Enter") openRowMenu(index, key);
+      // Esc with nothing selected is left alone
+      else if (key === "Escape" && selected.size > 0) clearSelection();
       else return;
     }
     event.preventDefault();
@@ -397,6 +466,7 @@
     bind:this={listElem}
     role="listbox"
     aria-label="Tracks"
+    aria-multiselectable="true"
     aria-describedby="track-list-help"
     tabindex={tracks.length > 0 && !focusedRowRendered ? 0 : -1}
     on:keydown={onListKeydown}
@@ -412,17 +482,23 @@
     >
       {#each trackListVirtualItems as virtItem (tracks[virtItem.index])}
         {@const item = tracks[virtItem.index]}
+        {@const isSelected = selected.has(item.id)}
+        <!-- Keyboard selection is handled by the listbox's keydown -->
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
         <div
           data-track-index={virtItem.index}
           role="option"
-          aria-selected={virtItem.index === focusedIndex}
+          aria-selected={isSelected}
           aria-posinset={virtItem.index + 1}
           aria-setsize={tracks.length}
           aria-label={`${item.track.name} by ${item.track.artists[0].name}`}
           tabindex={virtItem.index === focusedIndex ? 0 : -1}
-          class="relative grid grid-cols-[1fr_2.2rem_15px] gap-3 border-b transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          on:click={(event) => onRowClick(event, virtItem.index)}
+          class="relative grid select-none grid-cols-[1fr_2.2rem_15px] gap-3 border-b transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring {isSelected
+            ? 'bg-primary/10 hover:bg-primary/15'
+            : 'hover:bg-accent/60'}"
         >
-          <Track index={virtItem.index} track={tracks[virtItem.index].track} />
+          <Track index={virtItem.index} track={tracks[virtItem.index].track} selected={isSelected} />
           <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
           <DropdownMenu.Root
             open={menuOpenId === item.id}
@@ -506,7 +582,8 @@
 </OverlayScrollbarsComponent>
 
 <p id="track-list-help" class="sr-only">
-  Use arrow keys to browse. Alt plus arrow keys moves the track. Space opens track options.
+  Use arrow keys to browse. Alt plus arrow keys moves the track. Space selects the track, Shift
+  plus arrow keys extends the selection, Escape clears it. Enter opens track options.
   Press question mark for all keyboard shortcuts.
 </p>
 <div class="sr-only" role="status" aria-live="polite">{announcement}</div>
