@@ -5,7 +5,9 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import { Button } from "$lib/components/ui/button";
   import { Toaster } from "$lib/components/ui/sonner";
-  import { ChevronDown, LogOut } from "lucide-svelte";
+  import ShortcutsDialog from "$lib/components/ShortcutsDialog.svelte";
+  import { isTextInput, shortcutsOpen } from "$lib/shortcuts";
+  import { ChevronDown, Keyboard, LogOut } from "lucide-svelte";
 
   import type { LayoutData } from "./$types";
 
@@ -18,10 +20,28 @@
       setMode(value);
     }
   }
+
+  function onWindowKeydown(event: KeyboardEvent) {
+    if (
+      event.key !== "?" ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      event.defaultPrevented ||
+      isTextInput(event.target)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    shortcutsOpen.set(true);
+  }
 </script>
+
+<svelte:window on:keydown={onWindowKeydown} />
 
 <ModeWatcher />
 <Toaster />
+<ShortcutsDialog />
 
 <a
   href="#main"
@@ -55,6 +75,10 @@
                 <DropdownMenu.RadioItem value="system">System</DropdownMenu.RadioItem>
               </DropdownMenu.RadioGroup>
               <DropdownMenu.Separator />
+              <DropdownMenu.Item on:click={() => shortcutsOpen.set(true)}>
+                <Keyboard class="mr-2 h-4 w-4" aria-hidden="true" />
+                Keyboard shortcuts
+              </DropdownMenu.Item>
               <DropdownMenu.Item on:click={() => logoutForm.requestSubmit()}>
                 <LogOut class="mr-2 h-4 w-4" aria-hidden="true" />
                 Log out
