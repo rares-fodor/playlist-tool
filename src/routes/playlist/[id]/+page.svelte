@@ -246,7 +246,7 @@
 </svelte:head>
 
 <!-- Fill the viewport below the app header so the track list scrolls on its own -->
-<div class="flex h-[calc(100dvh-3.5rem)] flex-col pt-6">
+<div class="flex h-[calc(100dvh-3.5rem)] flex-col py-6">
   <!-- Playlist header -->
   <div class="flex items-end gap-4">
     <Icon src={current_playlist.images[0]?.url} size="large" class="rounded-md shadow-sm" />
@@ -390,7 +390,7 @@
     </div>
   </div>
 
-  <div class="min-h-0 flex-1">
+  <div class="min-h-0 flex-1 border-b">
     <TrackList bind:tracks={data.tracks} on:move={adoptCurrentOrder} />
   </div>
 </div>

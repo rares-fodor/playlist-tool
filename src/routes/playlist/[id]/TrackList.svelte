@@ -305,6 +305,28 @@
   const isRow = (target: EventTarget | null): target is HTMLElement =>
     target instanceof HTMLElement && target.getAttribute("role") === "option";
 
+  /* Key that opened the row menu. Its auto-repeats would otherwise reach whatever took focus
+   * (the first menu item, then the dialog it opens), so they're swallowed until it's released. */
+  let menuOpenKey: string | null = null;
+
+  function onWindowKeydown(event: KeyboardEvent) {
+    if (menuOpenKey !== null && event.repeat && event.key === menuOpenKey) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }
+
+  function onWindowKeyup(event: KeyboardEvent) {
+    if (event.key === menuOpenKey) {
+      menuOpenKey = null;
+    }
+  }
+
+  function openRowMenu(index: number, key: string) {
+    menuOpenId = tracks[index].id;
+    menuOpenKey = key;
+  }
+
   function onListKeydown(event: KeyboardEvent) {
     // Keys on the row's own ⋯ button keep their native behaviour
     if (!isRow(event.target) || event.ctrlKey || event.metaKey) {
@@ -314,7 +336,7 @@
     const key = event.key;
 
     if (key === "ContextMenu" || (key === "F10" && event.shiftKey)) {
-      menuOpenId = tracks[index].id;
+      openRowMenu(index, key);
     } else if (event.shiftKey) {
       // Reserved for multi-select
       return;
@@ -331,7 +353,7 @@
       else if (key === "End") focusRow(tracks.length - 1);
       else if (key === "PageUp") focusRow(index - pageSize());
       else if (key === "PageDown") focusRow(index + pageSize());
-      else if (key === "Enter") menuOpenId = tracks[index].id;
+      else if (key === " ") openRowMenu(index, key);
       else return;
     }
     event.preventDefault();
@@ -356,6 +378,9 @@
   }
 </script>
 
+<!-- Capture phase, so held-key repeats are dropped before the menu or dialog sees them -->
+<svelte:window on:keydown|capture={onWindowKeydown} on:keyup|capture={onWindowKeyup} />
+
 <OverlayScrollbarsComponent
   bind:this={osRef}
   options={{
@@ -366,6 +391,7 @@
   }}
   class="h-full"
 >
+  <!-- --ds-background-selected is the post-move flash colour (triggerPostMoveFlash's only knob) -->
   <!-- Rows hold the ⋯ button, but it's out of the Tab order and its menu is reachable from the row -->
   <div
     bind:this={listElem}
@@ -376,7 +402,7 @@
     on:keydown={onListKeydown}
     on:contextmenu={onListContextMenu}
     on:focusin={onListFocusin}
-    class="focus-visible:outline-none"
+    class="focus-visible:outline-none [--ds-background-selected:hsl(var(--primary)/0.15)]"
     style="position: relative; width: 100%; height: {$trackListVirtualizer.getTotalSize()}px;"
   >
     <div
@@ -394,7 +420,7 @@
           aria-setsize={tracks.length}
           aria-label={`${item.track.name} by ${item.track.artists[0].name}`}
           tabindex={virtItem.index === focusedIndex ? 0 : -1}
-          class="grid grid-cols-[1fr_2.2rem_15px] gap-3 border-b transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+          class="relative grid grid-cols-[1fr_2.2rem_15px] gap-3 border-b transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           <Track index={virtItem.index} track={tracks[virtItem.index].track} />
           <!-- DropdownTrigger adds a button in this div, use flex to fix it to the correct position -->
@@ -480,7 +506,7 @@
 </OverlayScrollbarsComponent>
 
 <p id="track-list-help" class="sr-only">
-  Use arrow keys to browse. Alt plus arrow keys moves the track. Enter opens track options.
+  Use arrow keys to browse. Alt plus arrow keys moves the track. Space opens track options.
   Press question mark for all keyboard shortcuts.
 </p>
 <div class="sr-only" role="status" aria-live="polite">{announcement}</div>

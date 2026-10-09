@@ -3,6 +3,7 @@
   import "overlayscrollbars/styles/overlayscrollbars.css";
   import { ModeWatcher, setMode, userPrefersMode } from "mode-watcher";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import * as Avatar from "$lib/components/ui/avatar";
   import { Button } from "$lib/components/ui/button";
   import { Toaster } from "$lib/components/ui/sonner";
   import ShortcutsDialog from "$lib/components/ShortcutsDialog.svelte";
@@ -62,7 +63,13 @@
         <div class="ml-auto">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild let:builder>
-              <Button variant="ghost" builders={[builder]} class="gap-1">
+              <Button variant="ghost" builders={[builder]} class="gap-2 pl-1.5">
+                <Avatar.Root class="h-7 w-7">
+                  <Avatar.Image src={data.avatarUrl} alt="" />
+                  <Avatar.Fallback class="text-xs font-medium" aria-hidden="true">
+                    {data.user.username.at(0)?.toUpperCase()}
+                  </Avatar.Fallback>
+                </Avatar.Root>
                 <span class="max-w-[12rem] truncate">{data.user.username}</span>
                 <ChevronDown class="h-4 w-4" aria-hidden="true" />
               </Button>

@@ -16,7 +16,6 @@
 
   const stateStyles: { [Key in DragState]?: string } = {
     "is-dragging": "opacity-40",
-    "is-dragging-over": "bg-primary/5",
   };
 
   export let track: TrackItem;
@@ -26,6 +25,8 @@
 
   let state: DragState = "idle";
   // Visual only: mirrors the edge TrackList's onDrop infers from the drag direction
+  // The tint and line are positioned against the TrackList option row (not this element) so they
+  // span the menu column too
   let dropEdge: "top" | "bottom" | undefined;
 
   onMount(() => {
@@ -92,8 +93,11 @@
 
 <div
   bind:this={element}
-  class={`relative grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_1fr_3rem] gap-3 py-1 group cursor-grab active:cursor-grabbing ${stateStyles[state] ?? ""}`}
+  class={`grid grid-cols-[3.5rem_1fr] sm:grid-cols-[3.5rem_1fr_1fr_3rem] gap-3 py-1 group cursor-grab active:cursor-grabbing ${stateStyles[state] ?? ""}`}
 >
+  {#if state === "is-dragging-over"}
+    <div class="pointer-events-none absolute inset-0 bg-primary/5" aria-hidden="true"></div>
+  {/if}
   {#if state === "is-dragging-over" && dropEdge}
     <div
       class="pointer-events-none absolute inset-x-0 z-10 h-0.5 bg-primary {dropEdge === 'top' ? '-top-px' : '-bottom-px'}"
