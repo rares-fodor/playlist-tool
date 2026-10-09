@@ -2,12 +2,14 @@
   import TrackList from "./TrackList.svelte";
   import TargetPickerDialog from "./TargetPickerDialog.svelte";
   import Icon from "$lib/components/Icon.svelte";
+  import UserMenu from "$lib/components/UserMenu.svelte";
   import * as AlertDialog from "$lib/components/ui/alert-dialog";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import * as Tooltip from "$lib/components/ui/tooltip";
   import { Button } from "$lib/components/ui/button";
   import { toast } from "svelte-sonner";
   import { beforeNavigate } from "$app/navigation";
+  import MaterialSymbolsArrowBack from "~icons/material-symbols/arrow-back";
   import MaterialSymbolsKeyboardArrowDown from "~icons/material-symbols/keyboard-arrow-down";
   import MaterialSymbolsKeyboardArrowUp from "~icons/material-symbols/keyboard-arrow-up";
   import MaterialSymbolsMoreHoriz from "~icons/material-symbols/more-horiz";
@@ -245,8 +247,18 @@
   <title>{current_playlist.name} · Playlist Tool</title>
 </svelte:head>
 
-<!-- Fill the viewport below the app header so the track list scrolls on its own -->
-<div class="flex h-[calc(100dvh-3.5rem)] flex-col py-6">
+<!-- Fill the viewport so the track list scrolls on its own -->
+<div class="flex h-dvh flex-col py-6">
+  <div class="mb-4 flex items-center gap-4">
+    <Button href="/playlist" variant="ghost" class="-ml-3 gap-1 text-muted-foreground">
+      <MaterialSymbolsArrowBack class="h-4 w-4" aria-hidden="true" />
+      Playlists
+    </Button>
+    {#if data.user}
+      <UserMenu user={data.user} avatarUrl={data.avatarUrl} class="ml-auto" />
+    {/if}
+  </div>
+
   <!-- Playlist header -->
   <div class="flex items-end gap-4">
     <Icon src={current_playlist.images[0]?.url} size="large" class="rounded-md shadow-sm" />

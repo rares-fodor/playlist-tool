@@ -3,6 +3,7 @@
   import { ChevronRight } from "lucide-svelte";
   import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
   import PlaylistList from "./PlaylistList.svelte";
+  import UserMenu from "$lib/components/UserMenu.svelte";
 
   import type { Playlist } from "$lib/api_types";
   import type { PageData } from "./$types";
@@ -59,12 +60,19 @@
   <title>Playlists · Playlist Tool</title>
 </svelte:head>
 
-<!-- Fill the viewport below the app header so the list scrolls on its own, like the editor -->
-<div class="mx-auto flex h-[calc(100dvh-3.5rem)] w-full max-w-3xl flex-col py-6">
-  <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Your playlists</h1>
-  <p class="mt-1 text-sm text-muted-foreground">
-    {visiblePlaylists.length} shown{#if hiddenPlaylists.length > 0}, {hiddenPlaylists.length} hidden{/if}
-  </p>
+<!-- Fill the viewport so the list scrolls on its own, like the editor -->
+<div class="mx-auto flex h-dvh w-full max-w-3xl flex-col py-6">
+  <div class="flex items-start gap-4">
+    <div class="min-w-0">
+      <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Your playlists</h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        {visiblePlaylists.length} shown{#if hiddenPlaylists.length > 0}, {hiddenPlaylists.length} hidden{/if}
+      </p>
+    </div>
+    {#if data.user}
+      <UserMenu user={data.user} avatarUrl={data.avatarUrl} class="ml-auto shrink-0" />
+    {/if}
+  </div>
 
   <!-- Negative margin + padding keeps row focus rings clear of the scroll area's clipping edge -->
   <OverlayScrollbarsComponent
