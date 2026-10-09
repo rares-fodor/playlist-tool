@@ -34,6 +34,9 @@
     --ring: 141 73% 30%;
  
     --radius: 0.5rem;
+
+    --glow-alpha: 0.08;
+    --grain-opacity: 0.04;
   }
  
   .dark {
@@ -65,6 +68,9 @@
     --destructive-foreground: 210 20% 98%;
  
     --ring: 141 73% 42%;
+
+    --glow-alpha: 0.14;
+    --grain-opacity: 0.05;
   }
 }
  
@@ -74,6 +80,23 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Soft brand-green glow behind the header, pinned to the viewport */
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      hsl(var(--primary) / var(--glow-alpha)),
+      transparent 70%
+    );
+    background-attachment: fixed;
+  }
+  /* Film grain over the backdrop; also hides banding in the glow */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 @layer base {
