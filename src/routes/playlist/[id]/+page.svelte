@@ -100,12 +100,84 @@
     );
   };
 
-  const valid_targets = data.playlists.filter(canCommit).filter(pl => pl.isVisible);
+  const shuffledName = `${current_playlist.name} (shuffled)`;
 
-  // Saved target if it's still valid, otherwise the playlist itself when possible
+  // The saved target if it's still valid, otherwise a playlist named like a created target.
+  // Either may be hidden on the playlists page.
+  const resolveTarget = (playlists: Playlist[], targetId: string | undefined) =>
+    playlists.find((pl) => pl.id === targetId && canCommit(pl)) ??
+    playlists.find((pl) => pl.name === shuffledName && canCommit(pl));
+
+  // Resolved target, otherwise the playlist itself when possible
   let target_playlist: Playlist | undefined =
-    valid_targets.find((e) => e.id === current_playlist.targetId) ??
+    resolveTarget(data.playlists, current_playlist.targetId) ??
     (canCommit(current_playlist) ? current_playlist : undefined);
+
+  $: resolved_target = resolveTarget(data.playlists, current_playlist.targetId);
+  $: valid_targets = data.playlists.filter((pl) => canCommit(pl) && pl.isVisible);
+  $: picker_targets =
+    resolved_target && !valid_targets.includes(resolved_target)
+      ? [...valid_targets, resolved_target]
+      : valid_targets;
+  // Offered only when there's nothing to reuse, so created targets don't pile up
+  $: canCreateTarget = !canCommit(current_playlist) && resolved_target === undefined;
+
+  // Spotify returns descriptions as HTML, with entities and links
+  function plainText(html: string) {
+    return new DOMParser().parseFromString(html, "text/html").body.textContent ?? "";
+  }
+
+  function targetDescription() {
+    const tag = "Shuffled by playlist-tool";
+    const source = plainText(current_playlist.description ?? "").replace(/\s+/g, " ").trim();
+    // Spotify's apps limit descriptions to 300 characters
+    const room = 300 - tag.length - 3;
+    if (source === "") {
+      return tag;
+    }
+    return `${source.length > room ? `${source.slice(0, room - 1)}…` : source} · ${tag}`;
+  }
+
+  // Creates the playlist on Spotify and saves it as this playlist's target.
+  // Returns undefined if creating failed, leaving the picker open to try again.
+  async function createTarget(name: string): Promise<Playlist | undefined> {
+    try {
+      const response = await fetch("/api/create_target", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceId: current_playlist.id,
+          name,
+          description: targetDescription(),
+        }),
+      });
+      const body = await response.json().catch(() => undefined);
+      if (!response.ok) {
+        toast.error(`Couldn't create "${name}"`, {
+          description: body?.message ?? `Spotify responded with status ${response.status}.`,
+        });
+        return undefined;
+      }
+
+      const created: Playlist = body.playlist;
+      // Added locally: reloading the page data would throw away uncommitted edits
+      data.playlists = [...data.playlists, created].sort((a, b) => a.name.localeCompare(b.name));
+      if (body.targetSaved) {
+        current_playlist.targetId = created.id;
+        toast.success(`Created "${created.name}"`);
+      } else {
+        toast.warning(`Created "${created.name}"`, {
+          description: "Couldn't save it as this playlist's target. It's saved when you commit to it.",
+        });
+      }
+      return created;
+    } catch {
+      toast.error(`Couldn't create "${name}"`, {
+        description: "Check your connection and try again.",
+      });
+      return undefined;
+    }
+  }
 
   $: commitDisabledReason = (() => {
     if (target_playlist !== undefined) {
@@ -411,9 +483,12 @@
 
     <div class="ml-auto flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
       <TargetPickerDialog
-        targets={valid_targets}
+        targets={picker_targets}
         currentId={current_playlist.id}
         bind:selected={target_playlist}
+        canCreate={canCreateTarget}
+        defaultName={shuffledName}
+        create={createTarget}
       />
 
       <AlertDialog.Root bind:open={commitDialogOpen}>
