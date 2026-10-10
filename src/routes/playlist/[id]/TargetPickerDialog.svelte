@@ -2,7 +2,10 @@
   import Icon from "$lib/components/Icon.svelte";
   import * as Dialog from "$lib/components/ui/dialog";
   import { Button } from "$lib/components/ui/button";
+  import { Input } from "$lib/components/ui/input";
+  import { Label } from "$lib/components/ui/label";
   import { tick } from "svelte";
+  import MaterialSymbolsAdd from "~icons/material-symbols/add";
   import MaterialSymbolsCheck from "~icons/material-symbols/check";
   import MaterialSymbolsExpandMore from "~icons/material-symbols/expand-more";
 
@@ -12,10 +15,19 @@
   export let targets: Playlist[];
   export let currentId: string;
   export let selected: Playlist | undefined;
+  // Whether to offer creating a new target, listed after the targets
+  export let canCreate = false;
+  export let defaultName = "";
+  // Creates the playlist; resolves to undefined if that failed
+  export let create: (name: string) => Promise<Playlist | undefined> = async () => undefined;
 
   let open = false;
   // Selection inside the dialog, only applied on confirm
   let pending: Playlist | undefined;
+  // "New playlist…" is selected instead of a target
+  let newPending = false;
+  let newName = "";
+  let creating = false;
   let focusIndex = 0;
   let options: HTMLButtonElement[] = [];
 
@@ -24,24 +36,60 @@
     ...targets.filter((t) => t.id !== currentId),
   ];
 
+  // "New playlist…" comes first, the targets' option indices follow it
+  const newIndex = 0;
+  $: offset = canCreate ? 1 : 0;
+  $: optionCount = orderedTargets.length + offset;
+
   $: if (open) onOpen();
 
   function onOpen() {
     pending = selected;
+    newPending = false;
+    newName = defaultName;
     const index = orderedTargets.findIndex((t) => t.id === selected?.id);
-    focusIndex = Math.max(index, 0);
+    focusIndex = index >= 0 ? index + offset : 0;
   }
 
   async function choose(index: number) {
     focusIndex = index;
-    pending = orderedTargets[index];
+    newPending = canCreate && index === newIndex;
+    pending = newPending ? undefined : orderedTargets[index - offset];
     await tick();
     options[index]?.focus();
   }
 
+  async function focusNameField() {
+    await tick();
+    document.getElementById("new-target-name")?.focus();
+  }
+
+  async function chooseNew() {
+    await choose(newIndex);
+    focusNameField();
+  }
+
+  async function submitNew() {
+    const name = newName.trim();
+    if (creating || name === "") {
+      return;
+    }
+    creating = true;
+    const created = await create(name);
+    creating = false;
+    if (created) {
+      selected = created;
+      open = false;
+    }
+  }
+
   // Radio group keyboard pattern: arrows move and select, Enter confirms
   function onKeydown(event: KeyboardEvent) {
-    const last = orderedTargets.length - 1;
+    // Keys typed in the name field are the field's own
+    if (event.target instanceof HTMLElement && event.target.closest("form")) {
+      return;
+    }
+    const last = optionCount - 1;
     let next: number | undefined;
     switch (event.key) {
       case "ArrowDown":
@@ -60,7 +108,11 @@
         break;
       case "Enter":
         event.preventDefault();
-        apply();
+        if (newPending) {
+          focusNameField();
+        } else {
+          apply();
+        }
         return;
       default:
         return;
@@ -101,7 +153,7 @@
       </Dialog.Description>
     </Dialog.Header>
 
-    {#if orderedTargets.length === 0}
+    {#if optionCount === 0}
       <p class="py-6 text-center text-sm text-muted-foreground">
         None of your visible playlists can be committed to. You can only commit to playlists you own that
         aren't collaborative and have at most 100 tracks.
@@ -115,15 +167,52 @@
         class="-mx-2 flex min-h-0 flex-col gap-0.5 overflow-y-auto p-2"
         on:keydown={onKeydown}
       >
+        {#if canCreate}
+          <button
+            bind:this={options[newIndex]}
+            type="button"
+            role="radio"
+            aria-checked={newPending}
+            tabindex={newIndex === focusIndex ? 0 : -1}
+            on:click={chooseNew}
+            class="flex items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent {newPending
+              ? 'bg-primary/10 font-medium'
+              : ''}"
+          >
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-dashed">
+              <MaterialSymbolsAdd class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            </span>
+            <span class="min-w-0 flex-1 truncate">New playlist…</span>
+            <MaterialSymbolsCheck
+              class="h-5 w-5 shrink-0 text-primary {newPending ? '' : 'invisible'}"
+              aria-hidden="true"
+            />
+          </button>
+          {#if newPending}
+            <!-- Right under its row; the group's key handling skips it, so Enter submits it -->
+            <form class="mb-2 flex flex-col gap-2 px-2 pt-1" on:submit|preventDefault={submitNew}>
+              <Label for="new-target-name">Name</Label>
+              <div class="flex gap-2">
+                <Input id="new-target-name" bind:value={newName} readonly={creating} autocomplete="off" />
+                <Button type="submit" disabled={creating || newName.trim() === ""} class="shrink-0">
+                  {creating ? "Creating…" : "Create"}
+                </Button>
+              </div>
+              <p class="text-sm text-muted-foreground">
+                Creates a private playlist on Spotify and uses it as the target.
+              </p>
+            </form>
+          {/if}
+        {/if}
         {#each orderedTargets as target, i (target.id)}
           {@const checked = pending?.id === target.id}
           <button
-            bind:this={options[i]}
+            bind:this={options[i + offset]}
             type="button"
             role="radio"
             aria-checked={checked}
-            tabindex={i === focusIndex ? 0 : -1}
-            on:click={() => choose(i)}
+            tabindex={i + offset === focusIndex ? 0 : -1}
+            on:click={() => choose(i + offset)}
             on:dblclick={apply}
             class="flex items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent {checked
               ? 'bg-primary/10 font-medium'
